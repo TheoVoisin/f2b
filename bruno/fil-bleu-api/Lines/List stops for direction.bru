@@ -1,0 +1,11 @@
+meta {
+  name: List stops for direction
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{host}}/api/lines/{{line}}/direction/{{direction}}/stops
+  body: none
+  auth: none
+}

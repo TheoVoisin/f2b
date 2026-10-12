@@ -1,0 +1,11 @@
+meta {
+  name: Line status
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{host}}/api/lines/{{line}}/status
+  body: none
+  auth: none
+}

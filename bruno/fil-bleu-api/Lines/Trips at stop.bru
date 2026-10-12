@@ -1,0 +1,11 @@
+meta {
+  name: Trips at stop
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{host}}/api/lines/{{line}}/direction/{{direction}}/stops/{{stopID}}/trips
+  body: none
+  auth: none
+}
