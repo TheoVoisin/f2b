@@ -1,8 +1,9 @@
-package fr.filbleu.tripupdates;
+package fr.filbleu.tripupdates.service;
 
+import fr.filbleu.tripupdates.api.dto.LineStatusResult;
+import fr.filbleu.tripupdates.infrastructure.gtfs.GtfsStaticCatalog;
 import com.google.transit.realtime.GtfsRealtime.Alert;
 import com.google.transit.realtime.GtfsRealtime.EntitySelector;
-import com.google.transit.realtime.GtfsRealtime.FeedEntity;
 import com.google.transit.realtime.GtfsRealtime.FeedMessage;
 import com.google.transit.realtime.GtfsRealtime.TimeRange;
 import com.google.transit.realtime.GtfsRealtime.TranslatedString;

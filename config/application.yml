@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: fil-bleu-box
+server:
+  port: ${PORT:8080}
+filbleu:
+  refresh-interval-ms: 30000
+  service-alerts-url: https://data.filbleu.fr/ws-tr/gtfs-rt/opendata/service-alerts
+  devices-file: ${FILBLEU_DEVICES_FILE:./data/devices.json}
+  security:
+    users:
+      admin:
+        username: admin
+        password: 'W8xgm/c5=ar?'

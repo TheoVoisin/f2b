@@ -1,4 +1,4 @@
-# Fil Bleu Trip Updates Server
+# Fil Bleu Box
 
 A small Spring Boot REST API that downloads the Fil Bleu static GTFS schedule at startup, then fetches the live GTFS-Realtime trip updates every 30 seconds.
 
@@ -17,6 +17,30 @@ mvn spring-boot:run
 
 The server listens on port `8080` by default. The initial realtime fetch happens during startup; later failed refreshes are logged and do not replace the last successfully fetched data.
 
+The administration space is available at `http://localhost:8080/` and requires a login. The `admin` account can manage devices and browse lines. The login page also provides a **Visualisation** button to browse lines and stops without signing in; this read-only access does not include device management. The admin credentials are configured by `filbleu.security.users.admin.*` in `application.yml`; override them for deployments rather than using the development defaults.
+
+In VS Code, install the recommended Java Extension Pack if prompted, then select the `FilBleuApplication` launch configuration and press `F5` to run or debug the server.
+
+## Docker
+
+Build the image from the project root:
+
+```powershell
+docker build -t fil-bleu-box .
+```
+
+Run it with the device registry persisted in the host's `data` directory and an optional external `config/application.yml` mounted read-only:
+
+```powershell
+New-Item -ItemType Directory -Force config | Out-Null
+docker run --name fil-bleu-box -p 8080:8080 `
+  --mount "type=bind,source=$((Get-Location).Path)\data,target=/app/data" `
+  --mount "type=bind,source=$((Get-Location).Path)\config,target=/app/config,readonly" `
+  fil-bleu-box
+```
+
+The application reads and writes `/app/data/devices.json`. The external `/app/config/application.yml`, when present, takes precedence over the configuration packaged in the application; copy `src/main/resources/application.yml` there and edit it to configure the deployment. Keep credentials and other deployment-specific settings in this external file rather than rebuilding the image.
+
 ## Bruno collection
 
 Open the collection in `bruno/fil-bleu-api` with Bruno. The collection-level variables are defined in `collection.bru`; edit them to change the host, line, direction, or stop. No environment needs to be selected.
@@ -31,11 +55,13 @@ GET http://localhost:8080/api/lines/2/direction/LYCEE%20J.%20MONNET/stops/TTR%3A
 
 The response is a JSON array containing scheduled arrival/departure times and optional realtime arrival/departure times and delays. Times are UTC ISO-8601 timestamps; delays are seconds. If fewer than two departures remain in the next 14 days, the response contains fewer than two results.
 
-`GET /api/lines/{line}/status` returns current GTFS-Realtime service alerts that apply to the line. The same `lineStatus` object is included in each result from the trips-at-stop endpoint. `NO_PUBLISHED_ALERTS` means the alert feed currently contains no applicable published alerts; it is not a guarantee that service is running normally. `FEED_UNAVAILABLE` means no successful alert-feed snapshot is available.
+`GET /api/lines/{line}/status` returns current GTFS-Realtime service alerts that apply to the line. The same `lineStatus` object is included in each result from the trips-at-stop endpoint. The administration page displays the line status and any active alerts when a direction is selected, lets you filter the stop list to a single stop, and provides a button to refresh the displayed line status and upcoming passages. Realtime passage times are highlighted; delays are shown in yellow. `NO_PUBLISHED_ALERTS` means the alert feed currently contains no applicable published alerts; it is not a guarantee that service is running normally. `FEED_UNAVAILABLE` means no successful alert-feed snapshot is available.
 
 ```text
 GET http://localhost:8080/api/lines/2/status
 ```
+
+`GET /api/lines` lists the line names available in the static GTFS catalogue. The administration page at `/` includes a **Lignes et arrêts** tab for browsing these lines, their directions, and the ordered stops in each direction.
 
 `GET /api/lines/{line}/directions` lists the directions for a line. Each result includes its display name and URL-encoded path value:
 
@@ -51,9 +77,48 @@ GET http://localhost:8080/api/lines/2/direction/LYCEE%20J.%20MONNET/stops
 
 Each stop includes its sequence, ID, and name. An unknown line or direction returns `404 Not Found`.
 
+`GET /api/lines/{line}/direction/{direction}/stops/with-trips` returns the same ordered stops along with up to two upcoming passages at each stop. Passage results include scheduled and available realtime times and delays.
+
+`GET /api/weather/{postalCode}` returns current conditions and today's morning, afternoon, and evening forecast for a French five-digit postal code:
+
+```text
+GET http://localhost:8080/api/weather/37000
+```
+
+The location is resolved to the first commune returned by the French government's commune service when a postal code covers multiple communes. Forecast data comes from Open-Meteo. Weather descriptions are translated to French by the weather description translation service. Periods use local time: morning is 06:00-12:00, afternoon is 12:00-18:00, and evening is 18:00-00:00. Each period reports average/minimum/maximum temperature, the most common weather code and French description, and the maximum precipitation probability. Invalid postal codes return `400 Bad Request`, unknown postal codes return `404 Not Found`, and upstream service failures return `502 Bad Gateway`.
+
+### Device API
+
+Devices can check connectivity with `GET /api/devices/ping`, which returns `{"status":"ok"}`.
+
+Register a device by sending its UUID:
+
+```text
+POST /api/devices
+Content-Type: application/json
+
+{"uuid":"550e8400-e29b-41d4-a716-446655440000"}
+```
+
+The device registry supports `GET /api/devices`, `GET /api/devices/{uuid}`, `PUT /api/devices/{uuid}`, and `DELETE /api/devices/{uuid}`; these management routes require the `admin` account. `GET /api/devices/ping`, `GET /api/devices/{uuid}/infos`, and `GET /api/devices/{uuid}/display` remain available without login for device clients. `PUT` replaces the device's query settings:
+
+```json
+{
+  "name": "Lobby display",
+  "line": "2",
+  "direction": "LYCEE J. MONNET",
+  "stopId": "TTR:GATO-2T",
+  "postalCode": "37000"
+}
+```
+
+After settings are saved, `GET /api/devices/{uuid}/infos` returns a combined object containing the device (including its `name`), trips at its configured stop, the line's status, and the postal-code weather forecast. A device without all settings receives `409 Conflict`; unknown UUIDs return `404 Not Found`, and duplicate registrations return `409 Conflict`. Newly registered devices use their UUID as the default name until settings are updated. Device data is stored in `./data/devices.json` by default. Set `FILBLEU_DEVICES_FILE` (or the `filbleu.devices-file` property) to change the file location.
+
+`GET /api/devices/{uuid}/display` returns a 400×300, black-and-white PNG for an e-paper screen. It shows the two next arrival times, any known realtime delay, current weather and the morning, afternoon, and evening forecast, each with a weather pictogram based on its weather code. When the line has active alerts, the image includes the first alert and the number of active alerts. The endpoint uses the same configuration checks and upstream data as `/infos`.
+
 ## Configuration
 
-Override the feed URLs or refresh interval with environment variables or Spring properties:
+Override the feed URLs, weather service URLs, refresh interval, or device registry file with environment variables or Spring properties:
 
 | Property | Default |
 | --- | --- |
@@ -61,4 +126,9 @@ Override the feed URLs or refresh interval with environment variables or Spring 
 | `filbleu.service-alerts-url` | `https://data.filbleu.fr/ws-tr/gtfs-rt/opendata/service-alerts` |
 | `filbleu.static-gtfs-url` | Fil Bleu's `filbleu_gtfs.zip` export on data.tours-metropole.fr |
 | `filbleu.refresh-interval-ms` | `30000` |
+| `weather.geocoding-url` | `https://geo.api.gouv.fr/communes` |
+| `weather.forecast-url` | `https://api.open-meteo.com/v1/forecast` |
+| `filbleu.devices-file` | `./data/devices.json` (`FILBLEU_DEVICES_FILE` environment variable can override it) |
+| `filbleu.security.users.admin.username` | `admin` |
+| `filbleu.security.users.admin.password` | Defined in `application.yml` |
 | `server.port` | `8080` (`PORT` environment variable can override it) |

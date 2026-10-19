@@ -1,11 +1,11 @@
-package fr.filbleu.tripupdates;
+package fr.filbleu.tripupdates.infrastructure;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
 
 @Configuration
-public class GtfsConfiguration {
+public class RestClientConfiguration {
 
     @Bean
     RestClient restClient(RestClient.Builder builder) {

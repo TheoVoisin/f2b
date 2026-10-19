@@ -13,7 +13,7 @@
     <groupId>fr.filbleu</groupId>
     <artifactId>trip-updates-server</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>Fil Bleu Trip Updates Server</name>
+    <name>Fil Bleu Box</name>
     <description>A small REST API for live Fil Bleu trip updates</description>
 
     <properties>
@@ -26,6 +26,14 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
         <dependency>
             <groupId>com.google.transit</groupId>

@@ -1,0 +1,17 @@
+meta {
+  name: Register device
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{host}}/api/devices
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "uuid": "{{deviceUUID}}"
+  }
+}

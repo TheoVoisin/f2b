@@ -1,5 +1,13 @@
-package fr.filbleu.tripupdates;
+package fr.filbleu.tripupdates.api;
 
+import fr.filbleu.tripupdates.api.dto.LineDirectionsResult;
+import fr.filbleu.tripupdates.api.dto.LineStatusResult;
+import fr.filbleu.tripupdates.api.dto.LineStopsResult;
+import fr.filbleu.tripupdates.api.dto.LineStopsWithTripsResult;
+import fr.filbleu.tripupdates.api.dto.UpcomingTripResult;
+import fr.filbleu.tripupdates.infrastructure.gtfs.GtfsStaticCatalog;
+import fr.filbleu.tripupdates.service.LineStatusService;
+import fr.filbleu.tripupdates.service.TripUpdateService;
 import java.util.List;
 import java.nio.charset.StandardCharsets;
 import org.springframework.http.HttpStatus;
@@ -25,6 +33,11 @@ public class LineController {
         this.catalog = catalog;
         this.tripUpdateService = tripUpdateService;
         this.lineStatusService = lineStatusService;
+    }
+
+    @GetMapping
+    public List<String> getLines() {
+        return catalog.lines();
     }
 
     @GetMapping("/{line}/direction/{direction}/stops/{stopId}/trips")
@@ -76,5 +89,29 @@ public class LineController {
         return new LineStopsResult(
                 line,
                 List.of(new LineStopsResult.DirectionStops(catalogDirection.direction(), stops)));
+    }
+
+    @GetMapping("/{line}/direction/{direction}/stops/with-trips")
+    public LineStopsWithTripsResult getStopsWithTrips(
+            @PathVariable String line,
+            @PathVariable String direction) {
+        GtfsStaticCatalog.DirectionStops catalogDirection =
+                catalog.stopsForLineAndDirection(line, direction);
+        if (catalogDirection == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Direction not found for line " + line + ": " + direction);
+        }
+
+        List<LineStopsWithTripsResult.Stop> stops = catalogDirection.stops().stream()
+                .map(stop -> new LineStopsWithTripsResult.Stop(
+                        stop.stopSequence(),
+                        stop.stopId(),
+                        stop.stopName(),
+                        tripUpdateService.nextTripsAtStop(line, stop.stopId(), direction)))
+                .toList();
+        return new LineStopsWithTripsResult(
+                line,
+                List.of(new LineStopsWithTripsResult.DirectionStops(catalogDirection.direction(), stops)));
     }
 }

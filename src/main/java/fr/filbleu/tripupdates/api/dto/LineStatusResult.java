@@ -1,4 +1,4 @@
-package fr.filbleu.tripupdates;
+package fr.filbleu.tripupdates.api.dto;
 
 import java.time.Instant;
 import java.util.List;

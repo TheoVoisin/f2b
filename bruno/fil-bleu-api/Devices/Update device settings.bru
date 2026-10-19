@@ -1,0 +1,21 @@
+meta {
+  name: Update device settings
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{host}}/api/devices/{{deviceUUID}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "{{deviceName}}",
+    "line": "{{line}}",
+    "direction": "LYCEE J. MONNET",
+    "stopId": "{{stopID}}",
+    "postalCode": "{{postalCode}}"
+  }
+}

@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f6f8">
+    <title>Fil Bleu Box</title>
+    <style>
+        :root {
+            color-scheme: light;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #172b3a;
+            background: #f4f6f8;
+            font-synthesis: none;
+        }
+
+        * { box-sizing: border-box; }
+        body { margin: 0; min-width: 320px; }
+        button, input { font: inherit; }
+        button { cursor: pointer; }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px max(24px, calc((100vw - 1180px) / 2));
+            color: #fff;
+            background: #123c59;
+        }
+        .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; letter-spacing: .01em; }
+        .brand-mark {
+            display: grid;
+            width: 36px;
+            height: 36px;
+            place-items: center;
+            border-radius: 11px;
+            color: #123c59;
+            background: #b9e6de;
+            font-size: 19px;
+        }
+        .topbar-label { color: #c5d9e4; font-size: 13px; }
+        .logout-button { padding: 8px 12px; border: 1px solid #ffffff45; border-radius: 8px; color: #fff; background: transparent; font-size: 12px; font-weight: 700; }
+        .logout-button:hover { background: #ffffff14; }
+        main { width: min(1180px, calc(100% - 48px)); margin: 42px auto; }
+        .page-heading { margin-bottom: 28px; }
+        .eyebrow { margin: 0 0 8px; color: #188476; font-size: 12px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+        h1 { margin: 0; font-size: clamp(28px, 4vw, 36px); letter-spacing: -.04em; }
+        .subtitle { margin: 9px 0 0; color: #647482; }
+        .tabs { display: flex; gap: 6px; margin: 0 0 22px; padding: 5px; border: 1px solid #e3e9ed; border-radius: 11px; background: #fff; }
+        .tab { min-height: 38px; padding: 0 15px; border: 0; border-radius: 7px; color: #637783; background: transparent; font-size: 13px; font-weight: 700; }
+        .tab:hover { color: #1d554f; background: #f3f8f6; }
+        .tab[aria-selected="true"] { color: #fff; background: #147c70; }
+        [hidden] { display: none !important; }
+        .layout { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(290px, .85fr); gap: 22px; align-items: start; }
+        .card { overflow: hidden; border: 1px solid #e3e9ed; border-radius: 15px; background: #fff; box-shadow: 0 4px 16px #17344a0a; }
+        .card-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 22px; border-bottom: 1px solid #edf0f2; }
+        h2 { margin: 0; font-size: 17px; letter-spacing: -.02em; }
+        .count { display: inline-grid; min-width: 27px; height: 27px; margin-left: 7px; padding: 0 7px; place-items: center; border-radius: 999px; color: #426172; background: #edf3f5; font-size: 12px; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { padding: 12px 18px; color: #74828c; background: #fafbfc; font-size: 11px; letter-spacing: .07em; text-transform: uppercase; }
+        td { padding: 15px 18px; border-top: 1px solid #eef1f3; font-size: 13px; vertical-align: middle; }
+        .device-name { display: block; max-width: 190px; overflow: hidden; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+        .device-uuid { display: block; max-width: 190px; margin-top: 4px; overflow: hidden; color: #84919a; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+        .route { color: #435966; }
+        .badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 999px; color: #16745f; background: #e8f6f1; font-size: 11px; font-weight: 700; white-space: nowrap; }
+        .badge::before { width: 6px; height: 6px; border-radius: 50%; background: currentColor; content: ""; }
+        .badge.unconfigured { color: #997122; background: #fbf3df; }
+        .actions { display: flex; gap: 6px; }
+        .icon-button, .secondary-button, .primary-button, .danger-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            min-height: 35px;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            transition: background .15s ease, border-color .15s ease;
+        }
+        .icon-button { width: 35px; padding: 0; border-color: #e5eaed; color: #536978; background: #fff; }
+        .icon-button:hover, .secondary-button:hover { border-color: #aabcc5; background: #f7f9fa; }
+        .icon-button.danger { color: #b34343; }
+        .primary-button { padding: 0 14px; color: #fff; background: #147c70; }
+        .primary-button:hover { background: #10685e; }
+        .primary-button:disabled { cursor: wait; opacity: .65; }
+        .secondary-button { padding: 0 12px; border-color: #e5eaed; color: #435966; background: #fff; }
+        .danger-button { padding: 0 12px; border-color: #f0d6d6; color: #a53c3c; background: #fff; }
+        .danger-button:hover { background: #fff7f7; }
+        .empty-state { padding: 50px 22px; color: #72818b; text-align: center; font-size: 13px; }
+        .empty-state strong { display: block; margin-bottom: 7px; color: #435966; font-size: 15px; }
+        .form-card { padding: 21px; }
+        .form-card h2 { margin-bottom: 5px; }
+        .form-intro { margin: 0 0 20px; color: #74828c; font-size: 12px; line-height: 1.5; }
+        .field { margin-bottom: 14px; }
+        label { display: block; margin-bottom: 6px; color: #445966; font-size: 12px; font-weight: 700; }
+        input { width: 100%; min-height: 39px; padding: 9px 11px; border: 1px solid #dce4e8; border-radius: 8px; outline: none; color: #203743; background: #fff; font-size: 13px; }
+        input:focus { border-color: #319b8d; box-shadow: 0 0 0 3px #319b8d20; }
+        input:disabled { color: #83919a; background: #f5f7f8; }
+        .field-hint { margin: 5px 0 0; color: #85929a; font-size: 11px; }
+        .divider { margin: 21px 0; border: 0; border-top: 1px solid #edf0f2; }
+        .form-actions { display: flex; justify-content: space-between; gap: 8px; margin-top: 20px; }
+        .form-actions .primary-button { flex: 1; }
+        .register-row { display: flex; gap: 8px; }
+        .register-row input { min-width: 0; }
+        .register-row button { flex: 0 0 auto; }
+        .notice { display: none; margin: 0 0 18px; padding: 12px 15px; border: 1px solid #cde8df; border-radius: 9px; color: #176451; background: #effaf6; font-size: 13px; }
+        .notice.error { border-color: #f0d1d1; color: #9e3939; background: #fff4f4; }
+        .notice.visible { display: block; }
+        .loading { color: #768791; font-size: 13px; }
+        .info-dialog { width: min(700px, calc(100% - 32px)); max-height: 85vh; padding: 0; border: 0; border-radius: 14px; box-shadow: 0 20px 70px #102b3b40; }
+        .info-dialog::backdrop { background: #102b3b88; }
+        .dialog-heading { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; border-bottom: 1px solid #edf0f2; }
+        .dialog-body { max-height: calc(85vh - 65px); overflow: auto; padding: 18px 20px; }
+        .dialog-body pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #304653; font: 12px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; }
+        .display-dialog { width: min(400px, calc(100% - 32px)); padding: 0; border: 0; border-radius: 14px; box-shadow: 0 20px 70px #102b3b40; }
+        .display-dialog::backdrop { background: #102b3b88; }
+        .display-preview { display: block; width: 100%; height: auto; }
+        .display-message { margin: 0; padding: 24px 20px; color: #647482; text-align: center; }
+        .browse-card { padding: 23px; }
+        .browse-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+        .browse-intro { margin: 8px 0 22px; color: #74828c; font-size: 13px; line-height: 1.6; }
+        .browse-heading .browse-intro { margin-bottom: 22px; }
+        .browse-refresh { flex: 0 0 auto; }
+        .browse-refresh:disabled { cursor: not-allowed; opacity: .55; }
+        .browse-selectors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+        select { width: 100%; min-height: 42px; padding: 9px 34px 9px 11px; border: 1px solid #dce4e8; border-radius: 8px; outline: none; color: #203743; background: #fff; font: inherit; font-size: 13px; }
+        select:focus { border-color: #319b8d; box-shadow: 0 0 0 3px #319b8d20; }
+        select:disabled { color: #83919a; background: #f5f7f8; }
+        .line-status { margin: 3px 0 22px; padding: 15px 17px; border: 1px solid #dce9e4; border-radius: 10px; background: #f6faf8; }
+        .line-status[data-state="alerts"] { border-color: #efdcae; background: #fffaf0; }
+        .line-status[data-state="unavailable"], .line-status[data-state="error"] { border-color: #f0d1d1; background: #fff5f5; }
+        .line-status-title { margin: 0; color: #31574e; font-size: 13px; font-weight: 750; }
+        .line-status[data-state="alerts"] .line-status-title { color: #805b12; }
+        .line-status[data-state="unavailable"] .line-status-title, .line-status[data-state="error"] .line-status-title { color: #9e3939; }
+        .line-alert-list { display: grid; gap: 11px; margin: 12px 0 0; padding: 0; list-style: none; }
+        .line-alert { padding-top: 10px; border-top: 1px solid #f0e7d2; }
+        .line-alert:first-child { padding-top: 0; border-top: 0; }
+        .line-alert-heading { margin: 0; color: #513e1d; font-size: 13px; font-weight: 700; }
+        .line-alert-meta { margin: 4px 0 0; color: #806c47; font-size: 11px; }
+        .line-alert-description { margin: 6px 0 0; color: #62543d; font-size: 12px; line-height: 1.55; white-space: pre-line; }
+        .line-alert-link { display: inline-block; margin-top: 6px; color: #28685e; font-size: 11px; font-weight: 700; }
+        .stops-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 25px 0 12px; }
+        .stops-heading h3 { margin: 0; font-size: 15px; }
+        .stop-count { color: #74828c; font-size: 12px; }
+        .stop-list { margin: 0; padding: 0; border: 1px solid #e8edef; border-radius: 10px; list-style: none; }
+        .stop-item { display: grid; grid-template-columns: 34px minmax(0, 1fr) minmax(190px, .9fr); align-items: center; gap: 11px; min-height: 68px; padding: 10px 13px; }
+        .stop-item + .stop-item { border-top: 1px solid #edf0f2; }
+        .stop-number { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; color: #397167; background: #eaf5f1; font-size: 11px; font-weight: 700; }
+        .stop-main { min-width: 0; }
+        .stop-name { display: block; overflow: hidden; font-size: 13px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+        .stop-id { overflow: hidden; color: #87949c; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+        .upcoming-trips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+        .passage { min-width: 0; padding: 7px 9px; border-radius: 8px; background: #f4f8f7; }
+        .passage.realtime { background: #e6f4ed; }
+        .passage.delayed { background: #fff0bd; }
+        .passage-time { display: block; color: #176b60; font-size: 14px; font-weight: 750; font-variant-numeric: tabular-nums; }
+        .passage.delayed .passage-time, .passage.delayed .passage-detail { color: #805600; }
+        .passage-detail { display: block; margin-top: 2px; overflow: hidden; color: #74828c; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+        .passage-empty { grid-column: 1 / -1; color: #84919a; font-size: 11px; }
+        .browse-empty { padding: 30px 16px; border: 1px dashed #dce4e8; border-radius: 10px; color: #74828c; text-align: center; font-size: 13px; }
+        @media (max-width: 800px) {
+            main { margin: 28px auto; }
+            .layout { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 540px) {
+            .topbar { padding: 15px 18px; }
+            .topbar-label { font-size: 11px; }
+            main { width: calc(100% - 28px); }
+            .card-heading { padding: 17px; }
+            .browse-card { padding: 18px; }
+            .browse-selectors { grid-template-columns: 1fr; gap: 12px; }
+            .browse-heading { align-items: flex-start; }
+            .browse-refresh { min-height: 32px; padding: 0 9px; font-size: 11px; }
+            .stop-item { grid-template-columns: 30px minmax(0, 1fr); gap: 9px; }
+            .upcoming-trips { grid-column: 2; width: 100%; }
+            th, td { padding-right: 12px; padding-left: 12px; }
+            th:nth-child(2), td:nth-child(2) { display: none; }
+            .device-name, .device-uuid { max-width: 145px; }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">F</span><span>Fil Bleu Box</span></div>
+        <form id="logout-form" action="/logout" method="post" hidden>
+            <input id="csrf-token" type="hidden" name="_csrf">
+            <button class="logout-button" type="submit">Déconnexion</button>
+        </form>
+    </header>
+    <main>
+        <section class="page-heading">
+            <p class="eyebrow">Espace d’administration</p>
+            <h1>Réseau Fil Bleu</h1>
+            <p class="subtitle">Gérez les appareils et parcourez les lignes du réseau.</p>
+        </section>
+        <div class="tabs" role="tablist" aria-label="Sections d’administration">
+            <button class="tab" id="devices-tab" type="button" role="tab" aria-selected="true" aria-controls="devices-panel" hidden>Appareils</button>
+            <button class="tab" id="lines-tab" type="button" role="tab" aria-selected="false" aria-controls="lines-panel" tabindex="-1" hidden>Lignes et arrêts</button>
+        </div>
+        <div id="notice" class="notice" role="status" aria-live="polite"></div>
+        <section id="devices-panel" role="tabpanel" aria-labelledby="devices-tab" hidden>
+          <div class="layout">
+            <section class="card" aria-labelledby="devices-title">
+                <div class="card-heading">
+                    <h2 id="devices-title">Appareils enregistrés <span class="count" id="device-count">0</span></h2>
+                    <button class="secondary-button" id="refresh-button" type="button" aria-label="Actualiser la liste">↻ Actualiser</button>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Appareil</th><th>Trajet</th><th>État</th><th>Actions</th></tr></thead>
+                        <tbody id="device-list"><tr><td colspan="4" class="empty-state"><span class="loading">Chargement des appareils…</span></td></tr></tbody>
+                    </table>
+                </div>
+            </section>
+            <aside>
+                <section class="card form-card" aria-labelledby="register-title">
+                    <h2 id="register-title">Enregistrer un appareil</h2>
+                    <p class="form-intro">Générez un identifiant UUID unique pour créer un nouvel appareil.</p>
+                    <form id="register-form">
+                        <button class="primary-button" type="submit">Générer</button>
+                    </form>
+                    <hr class="divider">
+                    <form id="settings-form">
+                        <h2 id="settings-title">Paramètres de l’appareil</h2>
+                        <p class="form-intro" id="settings-hint">Choisissez un appareil dans la liste pour modifier ses paramètres.</p>
+                        <div class="field">
+                            <label for="settings-uuid">UUID</label>
+                            <input id="settings-uuid" type="text" disabled placeholder="Aucun appareil sélectionné">
+                        </div>
+                        <div class="field">
+                            <label for="name">Nom de l’appareil</label>
+                            <input id="name" name="name" type="text" autocomplete="off" required disabled>
+                        </div>
+                        <div class="field">
+                            <label for="settings-line">Ligne</label>
+                            <select id="settings-line" name="line" required disabled>
+                                <option value="">Choisir une ligne</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="settings-direction">Direction</label>
+                            <select id="settings-direction" name="direction" required disabled>
+                                <option value="">Choisir une direction</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="settings-stop">Arrêt</label>
+                            <select id="settings-stop" name="stopId" required disabled>
+                                <option value="">Choisir un arrêt</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="postalCode">Code postal</label>
+                            <input id="postalCode" name="postalCode" type="text" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="37000" required disabled>
+                            <p class="field-hint">Code postal français à 5 chiffres.</p>
+                        </div>
+                        <div class="form-actions">
+                            <button class="secondary-button" id="cancel-edit" type="button" hidden>Annuler</button>
+                            <button class="primary-button" id="save-settings" type="submit" disabled>Enregistrer les paramètres</button>
+                        </div>
+                    </form>
+                </section>
+            </aside>
+          </div>
+        </section>
+        <section id="lines-panel" role="tabpanel" aria-labelledby="lines-tab" hidden>
+            <section class="card browse-card">
+                <div class="browse-heading">
+                    <div>
+                        <h2>Explorer le réseau</h2>
+                        <p class="browse-intro">Sélectionnez une ligne puis une direction pour consulter les arrêts desservis, dans l’ordre du parcours.</p>
+                    </div>
+                    <button class="secondary-button browse-refresh" id="refresh-network-button" type="button" disabled>↻ Actualiser</button>
+                </div>
+                <div class="browse-selectors">
+                    <div class="field">
+                        <label for="line-select">Ligne</label>
+                        <select id="line-select" disabled>
+                            <option value="">Chargement des lignes…</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="direction-select">Direction</label>
+                        <select id="direction-select" disabled>
+                            <option value="">Sélectionnez une ligne</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="stop-select">Arrêt</label>
+                        <select id="stop-select" disabled>
+                            <option value="">Sélectionnez une direction</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="line-status" class="line-status" role="status" aria-live="polite" hidden></div>
+                <div id="stops-container" aria-live="polite">
+                    <div class="browse-empty">Sélectionnez une ligne et une direction pour afficher les arrêts.</div>
+                </div>
+            </section>
+        </section>
+    </main>
+    <dialog class="info-dialog" id="info-dialog" aria-labelledby="info-title">
+        <div class="dialog-heading">
+            <h2 id="info-title">Informations de l’appareil</h2>
+            <button class="icon-button" id="close-info" type="button" aria-label="Fermer">✕</button>
+        </div>
+        <div class="dialog-body"><pre id="info-content"></pre></div>
+    </dialog>
+    <dialog class="display-dialog" id="display-dialog" aria-labelledby="display-title">
+        <div class="dialog-heading">
+            <h2 id="display-title">Prévisualisation e-paper</h2>
+            <button class="icon-button" id="close-display" type="button" aria-label="Fermer">✕</button>
+        </div>
+        <p class="display-message" id="display-message" role="status">Chargement de l’image…</p>
+        <img class="display-preview" id="display-preview" alt="Aperçu de l’écran e-paper" hidden>
+    </dialog>
+    <script>
+        const API = "/api/devices";
+        const LINES_API = "/api/lines";
+        const list = document.getElementById("device-list");
+        const count = document.getElementById("device-count");
+        const notice = document.getElementById("notice");
+        const settingsForm = document.getElementById("settings-form");
+        const registerForm = document.getElementById("register-form");
+        const settingsFields = [...settingsForm.querySelectorAll("input[name], select[name]")];
+        const settingsUuid = document.getElementById("settings-uuid");
+        const infoDialog = document.getElementById("info-dialog");
+        const displayDialog = document.getElementById("display-dialog");
+        const displayPreview = document.getElementById("display-preview");
+        const displayMessage = document.getElementById("display-message");
+        const lineSelect = document.getElementById("line-select");
+        const directionSelect = document.getElementById("direction-select");
+        const stopSelect = document.getElementById("stop-select");
+        const stopsContainer = document.getElementById("stops-container");
+        const lineStatusContainer = document.getElementById("line-status");
+        const settingsLineSelect = document.getElementById("settings-line");
+        const settingsDirectionSelect = document.getElementById("settings-direction");
+        const settingsStopSelect = document.getElementById("settings-stop");
+        let csrfToken = null;
+        let devices = [];
+        let selectedUuid = null;
+        let linesLoaded = false;
+        let availableLines = [];
+        let currentStops = [];
+
+        async function request(url, options = {}) {
+            const method = (options.method || "GET").toUpperCase();
+            const headers = { "Content-Type": "application/json", ...options.headers };
+            if (csrfToken && !["GET", "HEAD", "OPTIONS"].includes(method)) {
+                headers["X-CSRF-TOKEN"] = csrfToken;
+            }
+            const response = await fetch(url, {
+                ...options,
+                headers
+            });
+            if (!response.ok) {
+                let message = `${response.status} ${response.statusText}`;
+                try {
+                    const body = await response.json();
+                    message = body.detail || body.message || body.error || message;
+                } catch {
+                    // Keep the HTTP status when the server does not return JSON.
+                }
+                throw new Error(message);
+            }
+            return response.status === 204 ? null : response.json();
+        }
+
+        async function initializeAdmin() {
+            const session = await request("/api/admin/session");
+            csrfToken = session.csrfToken;
+            document.getElementById("csrf-token").value = csrfToken;
+            document.getElementById("lines-tab").hidden = false;
+            const canManageDevices = session.admin && window.location.pathname !== "/visualisation";
+            if (canManageDevices) {
+                document.getElementById("logout-form").hidden = false;
+                document.querySelector(".subtitle").textContent = "Gérez les appareils et parcourez les lignes du réseau.";
+                document.getElementById("devices-tab").hidden = false;
+                document.getElementById("devices-panel").hidden = false;
+                loadDevices();
+            } else {
+                document.querySelector(".subtitle").textContent = "Consultez les lignes et les arrêts du réseau.";
+                setActiveTab("lines");
+            }
+        }
+
+        function showNotice(message, isError = false) {
+            notice.textContent = message;
+            notice.classList.toggle("error", isError);
+            notice.classList.add("visible");
+        }
+
+        function clearNotice() {
+            notice.textContent = "";
+            notice.classList.remove("visible", "error");
+        }
+
+        function setActiveTab(tabName) {
+            const devicesActive = tabName === "devices";
+            document.getElementById("devices-tab").setAttribute("aria-selected", String(devicesActive));
+            document.getElementById("devices-tab").tabIndex = devicesActive ? 0 : -1;
+            document.getElementById("lines-tab").setAttribute("aria-selected", String(!devicesActive));
+            document.getElementById("lines-tab").tabIndex = devicesActive ? -1 : 0;
+            document.getElementById("devices-panel").hidden = !devicesActive;
+            document.getElementById("lines-panel").hidden = devicesActive;
+            clearNotice();
+            if (!devicesActive && !linesLoaded) loadLines();
+        }
+
+        async function loadLines() {
+            if (linesLoaded) return;
+            lineSelect.disabled = true;
+            lineSelect.replaceChildren(new Option("Chargement des lignes…", ""));
+            settingsLineSelect.replaceChildren(new Option("Chargement des lignes…", ""));
+            try {
+                availableLines = await request(LINES_API);
+                lineSelect.replaceChildren(new Option(
+                    availableLines.length ? "Choisir une ligne" : "Aucune ligne disponible",
+                    ""
+                ));
+                settingsLineSelect.replaceChildren(new Option(
+                    availableLines.length ? "Choisir une ligne" : "Aucune ligne disponible",
+                    ""
+                ));
+                for (const line of availableLines) {
+                    lineSelect.add(new Option(line, line));
+                    settingsLineSelect.add(new Option(line, line));
+                }
+                lineSelect.disabled = availableLines.length === 0;
+                linesLoaded = true;
+            } catch (error) {
+                lineSelect.replaceChildren(new Option("Erreur lors du chargement", ""));
+                settingsLineSelect.replaceChildren(new Option("Erreur lors du chargement", ""));
+                showNotice(`Impossible de charger les lignes : ${error.message}`, true);
+            }
+        }
+
+        async function loadSettingsDirections(line, selectedDirection = "") {
+            settingsDirectionSelect.disabled = true;
+            settingsDirectionSelect.replaceChildren(new Option("Chargement des directions…", ""));
+            settingsStopSelect.disabled = true;
+            settingsStopSelect.replaceChildren(new Option("Choisir un arrêt", ""));
+            try {
+                const result = await request(`${LINES_API}/${encodeURIComponent(line)}/directions`);
+                settingsDirectionSelect.replaceChildren(new Option("Choisir une direction", ""));
+                for (const direction of result.directions) {
+                    settingsDirectionSelect.add(new Option(direction.name, direction.name));
+                }
+                if (selectedDirection && !result.directions.some(item => item.name === selectedDirection)) {
+                    settingsDirectionSelect.add(new Option(`${selectedDirection} (indisponible)`, selectedDirection));
+                }
+                settingsDirectionSelect.disabled = result.directions.length === 0;
+                settingsDirectionSelect.value = selectedDirection;
+                return result.directions.some(item => item.name === selectedDirection);
+            } catch (error) {
+                settingsDirectionSelect.replaceChildren(new Option("Erreur lors du chargement", ""));
+                showNotice(`Impossible de charger les directions pour les paramètres : ${error.message}`, true);
+                throw error;
+            }
+        }
+
+        async function loadSettingsStops(line, direction, selectedStop = "") {
+            settingsStopSelect.disabled = true;
+            settingsStopSelect.replaceChildren(new Option("Chargement des arrêts…", ""));
+            try {
+                const result = await request(
+                    `${LINES_API}/${encodeURIComponent(line)}/direction/${encodeURIComponent(direction)}/stops`
+                );
+                const stops = result.directions.flatMap(item => item.stops);
+                settingsStopSelect.replaceChildren(new Option("Choisir un arrêt", ""));
+                for (const stop of stops) {
+                    settingsStopSelect.add(new Option(`${stop.stopName} · ${stop.stopId}`, stop.stopId));
+                }
+                if (selectedStop && !stops.some(stop => stop.stopId === selectedStop)) {
+                    settingsStopSelect.add(new Option(`${selectedStop} (indisponible)`, selectedStop));
+                }
+                settingsStopSelect.disabled = stops.length === 0;
+                settingsStopSelect.value = selectedStop;
+            } catch (error) {
+                settingsStopSelect.replaceChildren(new Option("Erreur lors du chargement", ""));
+                showNotice(`Impossible de charger les arrêts pour les paramètres : ${error.message}`, true);
+                throw error;
+            }
+        }
+
+        async function loadDirections(line) {
+            directionSelect.disabled = true;
+            directionSelect.replaceChildren(new Option("Chargement des directions…", ""));
+            document.getElementById("refresh-network-button").disabled = true;
+            stopSelect.disabled = true;
+            stopSelect.replaceChildren(new Option("Sélectionnez une direction", ""));
+            currentStops = [];
+            lineStatusContainer.hidden = true;
+            lineStatusContainer.replaceChildren();
+            stopsContainer.replaceChildren(makeBrowseEmpty("Sélectionnez une direction pour afficher les arrêts."));
+            try {
+                const result = await request(`${LINES_API}/${encodeURIComponent(line)}/directions`);
+                directionSelect.replaceChildren(new Option(
+                    result.directions.length ? "Choisir une direction" : "Aucune direction disponible",
+                    ""
+                ));
+                for (const direction of result.directions) {
+                    directionSelect.add(new Option(direction.name, direction.name));
+                }
+                directionSelect.disabled = result.directions.length === 0;
+            } catch (error) {
+                directionSelect.replaceChildren(new Option("Erreur lors du chargement", ""));
+                showNotice(`Impossible de charger les directions : ${error.message}`, true);
+            }
+        }
+
+        async function loadLineStatus(line) {
+            lineStatusContainer.hidden = false;
+            lineStatusContainer.dataset.state = "loading";
+            lineStatusContainer.textContent = "Chargement de l’état de la ligne…";
+            try {
+                const status = await request(`${LINES_API}/${encodeURIComponent(line)}/status`);
+                if (lineSelect.value !== line || !directionSelect.value) return;
+                renderLineStatus(status);
+            } catch (error) {
+                if (lineSelect.value !== line || !directionSelect.value) return;
+                lineStatusContainer.dataset.state = "error";
+                lineStatusContainer.textContent = `Impossible de charger l’état de la ligne : ${error.message}`;
+                lineStatusContainer.hidden = false;
+            }
+        }
+
+        function renderLineStatus(status) {
+            lineStatusContainer.replaceChildren();
+            lineStatusContainer.hidden = false;
+            const title = document.createElement("h3");
+            title.className = "line-status-title";
+
+            if (status.status === "FEED_UNAVAILABLE") {
+                lineStatusContainer.dataset.state = "unavailable";
+                title.textContent = "État de la ligne indisponible";
+                lineStatusContainer.append(title);
+                const explanation = document.createElement("p");
+                explanation.className = "line-alert-description";
+                explanation.textContent = "Le flux d’alertes n’est pas disponible ; l’absence d’alerte ne peut pas être confirmée.";
+                lineStatusContainer.append(explanation);
+                return;
+            }
+
+            const alerts = status.alerts || [];
+            if (!alerts.length) {
+                lineStatusContainer.dataset.state = "clear";
+                title.textContent = "Aucune alerte publiée pour cette ligne";
+                lineStatusContainer.append(title);
+                const explanation = document.createElement("p");
+                explanation.className = "line-alert-description";
+                explanation.textContent = "Cela ne garantit pas que le service fonctionne normalement.";
+                lineStatusContainer.append(explanation);
+                return;
+            }
+
+            lineStatusContainer.dataset.state = "alerts";
+            title.textContent = `Alertes sur la ligne (${alerts.length})`;
+            lineStatusContainer.append(title);
+            const alertList = document.createElement("ul");
+            alertList.className = "line-alert-list";
+            for (const alert of alerts) {
+                const item = document.createElement("li");
+                item.className = "line-alert";
+                const heading = document.createElement("h4");
+                heading.className = "line-alert-heading";
+                heading.textContent = alert.header || "Perturbation";
+                item.append(heading);
+                const metaParts = [alert.effect, alert.cause].filter(Boolean);
+                if (metaParts.length) {
+                    const meta = document.createElement("p");
+                    meta.className = "line-alert-meta";
+                    meta.textContent = metaParts.join(" · ").replaceAll("_", " ").toLowerCase();
+                    item.append(meta);
+                }
+                if (alert.description) {
+                    const description = document.createElement("p");
+                    description.className = "line-alert-description";
+                    description.textContent = alert.description;
+                    item.append(description);
+                }
+                if (alert.url) {
+                    const link = document.createElement("a");
+                    link.className = "line-alert-link";
+                    link.href = alert.url;
+                    link.target = "_blank";
+                    link.rel = "noopener noreferrer";
+                    link.textContent = "Plus d’informations";
+                    item.append(link);
+                }
+                alertList.append(item);
+            }
+            lineStatusContainer.append(alertList);
+        }
+
+        async function loadStops(line, direction, preserveSelectedStop = false) {
+            const selectedStopId = preserveSelectedStop && stopSelect.value !== ""
+                ? currentStops[Number(stopSelect.value)]?.stopId
+                : null;
+            stopSelect.disabled = true;
+            stopSelect.replaceChildren(new Option("Chargement des arrêts…", ""));
+            currentStops = [];
+            stopsContainer.replaceChildren(makeBrowseEmpty("Chargement des arrêts…"));
+            try {
+                const result = await request(
+                    `${LINES_API}/${encodeURIComponent(line)}/direction/${encodeURIComponent(direction)}/stops/with-trips`
+                );
+                currentStops = result.directions.flatMap(item => item.stops);
+                stopSelect.replaceChildren(new Option(
+                    currentStops.length ? `Tous les arrêts (${currentStops.length})` : "Aucun arrêt disponible",
+                    ""
+                ));
+                currentStops.forEach((stop, index) => {
+                    stopSelect.add(new Option(`${stop.stopName} · ${stop.stopId}`, String(index)));
+                });
+                stopSelect.disabled = currentStops.length === 0;
+                const selectedIndex = selectedStopId
+                    ? currentStops.findIndex(stop => stop.stopId === selectedStopId)
+                    : -1;
+                if (selectedIndex >= 0) stopSelect.value = String(selectedIndex);
+                renderStops(selectedIndex >= 0 ? [currentStops[selectedIndex]] : currentStops);
+            } catch (error) {
+                stopSelect.replaceChildren(new Option("Erreur lors du chargement", ""));
+                stopsContainer.replaceChildren(makeBrowseEmpty(`Impossible de charger les arrêts : ${error.message}`));
+                showNotice(`Impossible de charger les arrêts : ${error.message}`, true);
+            }
+        }
+
+        async function refreshNetworkData() {
+            const line = lineSelect.value;
+            const direction = directionSelect.value;
+            if (!line || !direction) return;
+
+            const button = document.getElementById("refresh-network-button");
+            button.disabled = true;
+            const originalText = button.textContent;
+            button.textContent = "Actualisation…";
+            clearNotice();
+            try {
+                await Promise.all([
+                    loadLineStatus(line),
+                    loadStops(line, direction, true)
+                ]);
+            } finally {
+                button.disabled = !lineSelect.value || !directionSelect.value;
+                button.textContent = originalText;
+            }
+        }
+
+        function makeBrowseEmpty(message) {
+            const empty = document.createElement("div");
+            empty.className = "browse-empty";
+            empty.textContent = message;
+            return empty;
+        }
+
+        function renderStops(stops) {
+            stopsContainer.replaceChildren();
+            if (!stops.length) {
+                stopsContainer.append(makeBrowseEmpty("Aucun arrêt n’est disponible pour cette direction."));
+                return;
+            }
+            const heading = document.createElement("div");
+            heading.className = "stops-heading";
+            const title = document.createElement("h3");
+            title.textContent = "Arrêts";
+            const total = document.createElement("span");
+            total.className = "stop-count";
+            total.textContent = `${stops.length} arrêt${stops.length > 1 ? "s" : ""}`;
+            heading.append(title, total);
+
+            const stopList = document.createElement("ol");
+            stopList.className = "stop-list";
+            for (const stop of stops) {
+                const item = document.createElement("li");
+                item.className = "stop-item";
+                const number = document.createElement("span");
+                number.className = "stop-number";
+                number.textContent = String(stop.stopSequence);
+                const main = document.createElement("div");
+                main.className = "stop-main";
+                const name = document.createElement("span");
+                name.className = "stop-name";
+                name.textContent = stop.stopName;
+                name.title = stop.stopName;
+                const id = document.createElement("span");
+                id.className = "stop-id";
+                id.textContent = stop.stopId;
+                id.title = stop.stopId;
+                main.append(name, id);
+                const passages = document.createElement("div");
+                passages.className = "upcoming-trips";
+                const trips = (stop.upcomingTrips || []).slice(0, 2);
+                if (trips.length) {
+                    for (const trip of trips) passages.append(renderPassage(trip));
+                } else {
+                    const empty = document.createElement("span");
+                    empty.className = "passage-empty";
+                    empty.textContent = "Aucun passage prévu prochainement";
+                    passages.append(empty);
+                }
+                item.append(number, main, passages);
+                stopList.append(item);
+            }
+            stopsContainer.append(heading, stopList);
+        }
+
+        function renderPassage(trip) {
+            const passage = document.createElement("div");
+            const scheduledTime = trip.scheduledDepartureTime || trip.scheduledArrivalTime;
+            const realtimeTime = trip.departureTime || trip.arrivalTime;
+            const delaySeconds = trip.departureDelaySeconds ?? trip.arrivalDelaySeconds;
+            const hasDelay = realtimeTime && delaySeconds != null && delaySeconds > 0;
+            passage.className = `passage${realtimeTime ? " realtime" : ""}${hasDelay ? " delayed" : ""}`;
+            const time = document.createElement("span");
+            time.className = "passage-time";
+            const displayedTime = realtimeTime || scheduledTime;
+            time.textContent = displayedTime
+                ? new Intl.DateTimeFormat("fr-FR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    timeZone: "Europe/Paris"
+                }).format(new Date(displayedTime))
+                : "Horaire indisponible";
+            passage.append(time);
+
+            const detail = document.createElement("span");
+            detail.className = "passage-detail";
+            if (realtimeTime) {
+                detail.textContent = delaySeconds == null
+                    ? "Temps réel"
+                    : formatDelay(delaySeconds);
+            } else {
+                detail.textContent = "Horaire théorique";
+            }
+            passage.append(detail);
+            return passage;
+        }
+
+        function formatDelay(delaySeconds) {
+            if (Math.abs(delaySeconds) < 60) {
+                if (delaySeconds > 0) return `Retard ${delaySeconds} s`;
+                if (delaySeconds < 0) return `Avance ${Math.abs(delaySeconds)} s`;
+                return "À l’heure";
+            }
+            const minutes = Math.round(Math.abs(delaySeconds) / 60);
+            return delaySeconds > 0 ? `Retard ${minutes} min` : `Avance ${minutes} min`;
+        }
+
+        function configured(device) {
+            return Boolean(device.name && device.line && device.direction && device.stopId && device.postalCode);
+        }
+
+        function renderDevices() {
+            count.textContent = String(devices.length);
+            list.replaceChildren();
+            if (!devices.length) {
+                const row = document.createElement("tr");
+                const cell = document.createElement("td");
+                cell.colSpan = 4;
+                cell.className = "empty-state";
+                const heading = document.createElement("strong");
+                heading.textContent = "Aucun appareil pour le moment";
+                const message = document.createElement("span");
+                message.textContent = "Enregistrez un appareil avec son UUID pour commencer.";
+                cell.append(heading, message);
+                row.append(cell);
+                list.append(row);
+                return;
+            }
+
+            for (const device of devices) {
+                const row = document.createElement("tr");
+                const identity = document.createElement("td");
+                const name = document.createElement("span");
+                name.className = "device-name";
+                name.textContent = device.name || "Sans nom";
+                const uuid = document.createElement("span");
+                uuid.className = "device-uuid";
+                uuid.textContent = device.uuid;
+                uuid.title = device.uuid;
+                identity.append(name, uuid);
+
+                const route = document.createElement("td");
+                route.className = "route";
+                route.textContent = device.line ? `${device.line} · ${device.direction || ""}` : "—";
+
+                const status = document.createElement("td");
+                const badge = document.createElement("span");
+                badge.className = `badge${configured(device) ? "" : " unconfigured"}`;
+                badge.textContent = configured(device) ? "Configuré" : "À configurer";
+                status.append(badge);
+
+                const actions = document.createElement("td");
+                const actionGroup = document.createElement("div");
+                actionGroup.className = "actions";
+                actionGroup.append(
+                    makeAction("✎", "Modifier les paramètres", () => editDevice(device.uuid)),
+                    makeAction("↗", "Consulter les informations", () => showInfo(device.uuid)),
+                    makeAction("▧", "Prévisualiser l’écran e-paper", () => showDisplay(device.uuid)),
+                    makeAction("⌫", "Supprimer l’appareil", () => deleteDevice(device.uuid), true)
+                );
+                actions.append(actionGroup);
+                row.append(identity, route, status, actions);
+                list.append(row);
+            }
+        }
+
+        function makeAction(label, accessibleName, callback, danger = false) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = `icon-button${danger ? " danger" : ""}`;
+            button.textContent = label;
+            button.setAttribute("aria-label", accessibleName);
+            button.title = accessibleName;
+            button.addEventListener("click", callback);
+            return button;
+        }
+
+        async function loadDevices() {
+            clearNotice();
+            list.innerHTML = '<tr><td colspan="4" class="empty-state"><span class="loading">Chargement des appareils…</span></td></tr>';
+            try {
+                devices = await request(API);
+                renderDevices();
+                if (selectedUuid && !devices.some(device => device.uuid === selectedUuid)) {
+                    resetSettings();
+                }
+            } catch (error) {
+                devices = [];
+                renderDevices();
+                showNotice(`Impossible de charger les appareils : ${error.message}`, true);
+            }
+        }
+
+        async function editDevice(uuid) {
+            clearNotice();
+            try {
+                const device = await request(`${API}/${encodeURIComponent(uuid)}`);
+                await loadLines();
+                if (!linesLoaded) throw new Error("La liste des lignes n’est pas disponible.");
+                selectedUuid = device.uuid;
+                settingsUuid.value = device.uuid;
+                for (const field of settingsFields) {
+                    field.disabled = false;
+                    if (field.name !== "line" && field.name !== "direction" && field.name !== "stopId") {
+                        field.value = device[field.name] || "";
+                    }
+                }
+                if (device.line && !availableLines.includes(device.line)) {
+                    settingsLineSelect.add(new Option(`${device.line} (indisponible)`, device.line));
+                }
+                settingsLineSelect.value = device.line || "";
+                settingsDirectionSelect.replaceChildren(new Option("Choisir une direction", ""));
+                settingsDirectionSelect.disabled = !device.line;
+                settingsStopSelect.replaceChildren(new Option("Choisir un arrêt", ""));
+                settingsStopSelect.disabled = true;
+                if (device.line) {
+                    const directionExists = await loadSettingsDirections(device.line, device.direction || "");
+                    if (directionExists && device.direction) {
+                        await loadSettingsStops(device.line, device.direction, device.stopId || "");
+                    }
+                }
+                document.getElementById("settings-hint").textContent = "Modifiez les paramètres puis enregistrez vos changements.";
+                document.getElementById("save-settings").disabled = false;
+                document.getElementById("cancel-edit").hidden = false;
+                document.getElementById("name").focus();
+            } catch (error) {
+                showNotice(`Impossible de charger cet appareil : ${error.message}`, true);
+            }
+        }
+
+        function resetSettings() {
+            selectedUuid = null;
+            settingsForm.reset();
+            settingsUuid.value = "";
+            for (const field of settingsFields) field.disabled = true;
+            settingsDirectionSelect.replaceChildren(new Option("Choisir une direction", ""));
+            settingsStopSelect.replaceChildren(new Option("Choisir un arrêt", ""));
+            document.getElementById("settings-hint").textContent = "Choisissez un appareil dans la liste pour modifier ses paramètres.";
+            document.getElementById("save-settings").disabled = true;
+            document.getElementById("cancel-edit").hidden = true;
+        }
+
+        registerForm.addEventListener("submit", async event => {
+            event.preventDefault();
+            clearNotice();
+            const button = registerForm.querySelector("button[type=submit]");
+            button.disabled = true;
+            try {
+                if (!globalThis.crypto?.randomUUID) {
+                    throw new Error("La génération d’UUID n’est pas disponible dans ce navigateur.");
+                }
+                const device = await request(API, {
+                    method: "POST",
+                    body: JSON.stringify({ uuid: crypto.randomUUID() })
+                });
+                await loadDevices();
+                await editDevice(device.uuid);
+                showNotice("Appareil généré et enregistré. Vous pouvez maintenant renseigner ses paramètres.");
+            } catch (error) {
+                showNotice(`Impossible d’enregistrer l’appareil : ${error.message}`, true);
+            } finally {
+                button.disabled = false;
+            }
+        });
+
+        settingsForm.addEventListener("submit", async event => {
+            event.preventDefault();
+            if (!selectedUuid) return;
+            clearNotice();
+            const button = document.getElementById("save-settings");
+            button.disabled = true;
+            const values = Object.fromEntries(new FormData(settingsForm).entries());
+            delete values.uuid;
+            try {
+                await request(`${API}/${encodeURIComponent(selectedUuid)}`, {
+                    method: "PUT",
+                    body: JSON.stringify(values)
+                });
+                await loadDevices();
+                showNotice("Paramètres de l’appareil enregistrés.");
+            } catch (error) {
+                showNotice(`Impossible d’enregistrer les paramètres : ${error.message}`, true);
+            } finally {
+                button.disabled = false;
+            }
+        });
+
+        async function deleteDevice(uuid) {
+            const device = devices.find(item => item.uuid === uuid);
+            if (!window.confirm(`Supprimer l’appareil « ${device?.name || uuid} » ? Cette action est irréversible.`)) return;
+            clearNotice();
+            try {
+                await request(`${API}/${encodeURIComponent(uuid)}`, { method: "DELETE" });
+                if (selectedUuid === uuid) resetSettings();
+                await loadDevices();
+                showNotice("Appareil supprimé.");
+            } catch (error) {
+                showNotice(`Impossible de supprimer l’appareil : ${error.message}`, true);
+            }
+        }
+
+        async function showInfo(uuid) {
+            clearNotice();
+            document.getElementById("info-title").textContent = `Informations — ${uuid}`;
+            document.getElementById("info-content").textContent = "Chargement…";
+            infoDialog.showModal();
+            try {
+                const info = await request(`${API}/${encodeURIComponent(uuid)}/infos`);
+                document.getElementById("info-content").textContent = JSON.stringify(info, null, 2);
+            } catch (error) {
+                document.getElementById("info-content").textContent = `Impossible de charger les informations : ${error.message}`;
+            }
+        }
+
+        function showDisplay(uuid) {
+            displayMessage.hidden = false;
+            displayMessage.textContent = "Chargement de l’image…";
+            displayPreview.hidden = true;
+            displayPreview.onload = () => {
+                displayMessage.hidden = true;
+                displayPreview.hidden = false;
+            };
+            displayPreview.onerror = () => {
+                displayPreview.hidden = true;
+                displayMessage.textContent = "Impossible de générer l’image. Vérifiez que l’appareil est configuré et réessayez.";
+            };
+            displayDialog.showModal();
+            displayPreview.src = `${API}/${encodeURIComponent(uuid)}/display?t=${Date.now()}`;
+        }
+
+        document.getElementById("refresh-button").addEventListener("click", loadDevices);
+        document.getElementById("cancel-edit").addEventListener("click", resetSettings);
+        document.getElementById("close-info").addEventListener("click", () => infoDialog.close());
+        document.getElementById("close-display").addEventListener("click", () => displayDialog.close());
+        document.getElementById("devices-tab").addEventListener("click", () => setActiveTab("devices"));
+        document.getElementById("lines-tab").addEventListener("click", () => setActiveTab("lines"));
+        document.getElementById("refresh-network-button").addEventListener("click", refreshNetworkData);
+        settingsLineSelect.addEventListener("change", async () => {
+            clearNotice();
+            settingsDirectionSelect.replaceChildren(new Option("Choisir une direction", ""));
+            settingsStopSelect.replaceChildren(new Option("Choisir un arrêt", ""));
+            settingsDirectionSelect.disabled = true;
+            settingsStopSelect.disabled = true;
+            if (settingsLineSelect.value) {
+                try {
+                    await loadSettingsDirections(settingsLineSelect.value);
+                } catch (error) {
+                    showNotice(`Impossible de préparer les directions : ${error.message}`, true);
+                }
+            }
+        });
+        settingsDirectionSelect.addEventListener("change", async () => {
+            clearNotice();
+            settingsStopSelect.replaceChildren(new Option("Choisir un arrêt", ""));
+            settingsStopSelect.disabled = true;
+            if (settingsLineSelect.value && settingsDirectionSelect.value) {
+                try {
+                    await loadSettingsStops(settingsLineSelect.value, settingsDirectionSelect.value);
+                } catch (error) {
+                    showNotice(`Impossible de préparer les arrêts : ${error.message}`, true);
+                }
+            }
+        });
+        lineSelect.addEventListener("change", () => {
+            clearNotice();
+            if (lineSelect.value) {
+                loadDirections(lineSelect.value);
+            } else {
+                directionSelect.replaceChildren(new Option("Sélectionnez une ligne", ""));
+                directionSelect.disabled = true;
+                lineStatusContainer.hidden = true;
+                lineStatusContainer.replaceChildren();
+                stopsContainer.replaceChildren(makeBrowseEmpty("Sélectionnez une ligne et une direction pour afficher les arrêts."));
+            }
+        });
+        directionSelect.addEventListener("change", () => {
+            clearNotice();
+            if (lineSelect.value && directionSelect.value) {
+                loadLineStatus(lineSelect.value);
+                loadStops(lineSelect.value, directionSelect.value);
+                document.getElementById("refresh-network-button").disabled = false;
+            } else {
+                document.getElementById("refresh-network-button").disabled = true;
+                stopSelect.replaceChildren(new Option("Sélectionnez une direction", ""));
+                stopSelect.disabled = true;
+                currentStops = [];
+                lineStatusContainer.hidden = true;
+                lineStatusContainer.replaceChildren();
+                stopsContainer.replaceChildren(makeBrowseEmpty("Sélectionnez une direction pour afficher les arrêts."));
+            }
+        });
+        stopSelect.addEventListener("change", () => {
+            const selectedIndex = stopSelect.value;
+            renderStops(selectedIndex === "" ? currentStops : [currentStops[Number(selectedIndex)]].filter(Boolean));
+        });
+        infoDialog.addEventListener("click", event => {
+            if (event.target === infoDialog) infoDialog.close();
+        });
+        initializeAdmin().catch(error => {
+            showNotice(`Impossible de charger votre session : ${error.message}`, true);
+        });
+    </script>
+</body>
+</html>

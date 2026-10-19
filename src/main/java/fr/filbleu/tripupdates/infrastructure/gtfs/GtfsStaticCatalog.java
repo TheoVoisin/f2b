@@ -1,4 +1,4 @@
-package fr.filbleu.tripupdates;
+package fr.filbleu.tripupdates.infrastructure.gtfs;
 
 import jakarta.annotation.PostConstruct;
 import java.io.BufferedReader;
@@ -75,23 +75,31 @@ public class GtfsStaticCatalog {
         }
     }
 
-    Route route(String routeId) {
+    public Route route(String routeId) {
         return routes.get(routeId);
     }
 
-    Stop stop(String stopId) {
+    public Stop stop(String stopId) {
         return stops.get(stopId);
     }
 
-    Trip trip(String tripId) {
+    public Trip trip(String tripId) {
         return trips.get(tripId);
     }
 
-    Set<TripDirection> tripsAt(String stopId, int stopSequence) {
+    public Set<TripDirection> tripsAt(String stopId, int stopSequence) {
         return tripsByStopSequence.getOrDefault(new StopSequence(stopId, stopSequence), Set.of());
     }
 
-    List<DirectionStops> stopsForLine(String line) {
+    public List<String> lines() {
+        return stopsByLineAndDirection.keySet().stream()
+                .map(DirectionKey::line)
+                .distinct()
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
+    }
+
+    public List<DirectionStops> stopsForLine(String line) {
         String requestedLine = line.trim();
         List<DirectionStops> directions = new ArrayList<>();
         stopsByLineAndDirection.entrySet().stream()
@@ -112,24 +120,24 @@ public class GtfsStaticCatalog {
         return List.copyOf(directions);
     }
 
-    DirectionStops stopsForLineAndDirection(String line, String direction) {
+    public DirectionStops stopsForLineAndDirection(String line, String direction) {
         return stopsForLine(line).stream()
                 .filter(candidate -> candidate.direction().equalsIgnoreCase(direction.trim()))
                 .findFirst()
                 .orElse(null);
     }
 
-    boolean routeBelongsToLine(String routeId, String line) {
+    public boolean routeBelongsToLine(String routeId, String line) {
         Route route = routes.get(routeId);
         return route != null && route.shortName().equalsIgnoreCase(line.trim());
     }
 
-    boolean tripBelongsToLine(String tripId, String line) {
+    public boolean tripBelongsToLine(String tripId, String line) {
         Trip trip = trips.get(tripId);
         return trip != null && routeBelongsToLine(trip.routeId(), line);
     }
 
-    boolean stopBelongsToLine(String stopId, String line) {
+    public boolean stopBelongsToLine(String stopId, String line) {
         String requestedLine = line.trim();
         return stopsByLineAndDirection.entrySet().stream()
                 .anyMatch(entry -> entry.getKey().line().equalsIgnoreCase(requestedLine)
@@ -137,14 +145,15 @@ public class GtfsStaticCatalog {
                                 .anyMatch(stopIds -> stopIds.stream().anyMatch(id -> id.equalsIgnoreCase(stopId))));
     }
 
-    boolean routeTypeBelongsToLine(int routeType, String line) {
+    public boolean routeTypeBelongsToLine(int routeType, String line) {
         String requestedLine = line.trim();
         return routes.values().stream()
                 .anyMatch(route -> route.shortName().equalsIgnoreCase(requestedLine)
                         && route.routeType() == routeType);
     }
 
-    List<ScheduledTrip> nextDepartures(String line, String direction, String stopId, Instant now, int limit) {
+    public List<ScheduledTrip> nextDepartures(
+            String line, String direction, String stopId, Instant now, int limit) {
         String requestedLine = line.trim();
         String requestedDirection = direction.trim();
         ZoneId zone = agencyTimeZone;
@@ -415,25 +424,25 @@ public class GtfsStaticCatalog {
         }
     }
 
-    record Route(String shortName, String longName, int routeType) {
+    public record Route(String shortName, String longName, int routeType) {
     }
 
-    record Stop(String name) {
+    public record Stop(String name) {
     }
 
-    record Trip(String routeId, String serviceId, String headsign) {
+    public record Trip(String routeId, String serviceId, String headsign) {
     }
 
-    record TripDirection(String routeId, String headsign) {
+    public record TripDirection(String routeId, String headsign) {
     }
 
-    record StopInfo(int stopSequence, String stopId, String stopName) {
+    public record StopInfo(int stopSequence, String stopId, String stopName) {
     }
 
-    record DirectionStops(String direction, List<StopInfo> stops) {
+    public record DirectionStops(String direction, List<StopInfo> stops) {
     }
 
-    record ScheduledTrip(
+    public record ScheduledTrip(
             String tripId,
             String routeId,
             String line,

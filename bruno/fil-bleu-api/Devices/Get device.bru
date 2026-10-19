@@ -1,0 +1,11 @@
+meta {
+  name: Get device
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{host}}/api/devices/{{deviceUUID}}
+  body: none
+  auth: none
+}
