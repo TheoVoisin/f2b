@@ -3,6 +3,7 @@ spring:
     name: fil-bleu-box
 server:
   port: ${PORT:8080}
+  forward-headers-strategy: framework
 filbleu:
   refresh-interval-ms: 30000
   service-alerts-url: https://data.filbleu.fr/ws-tr/gtfs-rt/opendata/service-alerts

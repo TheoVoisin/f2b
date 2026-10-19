@@ -41,6 +41,41 @@ docker run --name fil-bleu-box -p 8080:8080 `
 
 The application reads and writes `/app/data/devices.json`. The external `/app/config/application.yml`, when present, takes precedence over the configuration packaged in the application; copy `src/main/resources/application.yml` there and edit it to configure the deployment. Keep credentials and other deployment-specific settings in this external file rather than rebuilding the image.
 
+### Nginx reverse proxy
+
+The application honors the standard `Forwarded` and `X-Forwarded-*` headers, so Nginx can terminate HTTPS and forward requests to the container. When Nginx runs directly on the Docker host, publish the application port only on loopback:
+
+```powershell
+docker run --name fil-bleu-box -p 127.0.0.1:8080:8080 `
+  --mount "type=bind,source=$((Get-Location).Path)\data,target=/app/data" `
+  --mount "type=bind,source=$((Get-Location).Path)\config,target=/app/config,readonly" `
+  --env FILBLEU_SECURITY_USERS_ADMIN_USERNAME `
+  --env FILBLEU_SECURITY_USERS_ADMIN_PASSWORD `
+  fil-bleu-box
+```
+
+Set `FILBLEU_SECURITY_USERS_ADMIN_USERNAME` and `FILBLEU_SECURITY_USERS_ADMIN_PASSWORD` in the environment before running the command; Spring environment properties override the mounted YAML configuration. Do not expose port `8080` publicly when Nginx is the public entry point.
+
+Example Nginx virtual host for an application served at the domain root:
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name filbleu.example.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+    }
+}
+```
+
+If Nginx also runs in Docker, attach both containers to a private Docker network instead of publishing the application port, then proxy to `http://fil-bleu-box:8080`. Keep the application reachable only by the trusted proxy so clients cannot send spoofed forwarded headers directly.
+
 ## Bruno collection
 
 Open the collection in `bruno/fil-bleu-api` with Bruno. The collection-level variables are defined in `collection.bru`; edit them to change the host, line, direction, or stop. No environment needs to be selected.
@@ -133,3 +168,4 @@ Override the feed URLs, weather service URLs, refresh interval, or device regist
 | `filbleu.security.users.admin.username` | `admin` |
 | `filbleu.security.users.admin.password` | Defined in `application.yml` |
 | `server.port` | `8080` (`PORT` environment variable can override it) |
+| `server.forward-headers-strategy` | `framework` (honors reverse-proxy forwarded headers) |
