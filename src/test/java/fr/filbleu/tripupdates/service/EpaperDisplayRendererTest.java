@@ -5,9 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import fr.filbleu.tripupdates.api.dto.Device;
 import fr.filbleu.tripupdates.api.dto.DeviceInfosResult;
+import fr.filbleu.tripupdates.api.dto.DownstreamStopArrivalResult;
 import fr.filbleu.tripupdates.api.dto.LineStatusResult;
 import fr.filbleu.tripupdates.api.dto.UpcomingTripResult;
 import fr.filbleu.tripupdates.api.dto.WeatherForecastResult;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -40,7 +42,50 @@ class EpaperDisplayRendererTest {
         }
         assertTrue(hasBlackPixel);
         assertTrue(hasWhitePixel);
-        assertTrue(countBlackPixels(image, 16, 240, 25, 24) > 10);
+        assertTrue(countBlackPixels(image, 16, 220, 25, 24) > 10);
+        assertTrue(countBlackPixels(image, 299, 75, 84, 24) > 10);
+        assertAlertTextHasNoBorder(image);
+        assertEquals(0x000000, image.getRGB(25, 233) & 0x00ffffff);
+        assertPassageAreaIsExpandedAboveCompactWeather(image);
+    }
+
+    @Test
+    void keepsNoAlertsMessageSeparateFromUpcomingTripsTitle() throws Exception {
+        EpaperDisplayRenderer renderer = new EpaperDisplayRenderer();
+        DeviceInfosResult infos = deviceInfosWithAlertAndDelay();
+        LineStatusResult noAlerts = new LineStatusResult(
+                "2",
+                "NO_PUBLISHED_ALERTS",
+                true,
+                Instant.parse("2026-10-19T09:00:00Z"),
+                Instant.parse("2026-10-19T09:00:00Z"),
+                List.of());
+        DeviceInfosResult withoutAlerts = new DeviceInfosResult(
+                infos.device(),
+                infos.trips(),
+                noAlerts,
+                infos.weather());
+
+        BufferedImage rendered = ImageIO.read(new ByteArrayInputStream(renderer.render(withoutAlerts)));
+        assertPassageAreaIsExpandedAboveCompactWeather(rendered);
+        assertAlertTextHasNoBorder(rendered);
+    }
+
+    private void assertAlertTextHasNoBorder(BufferedImage image) {
+        assertEquals(0xffffff, image.getRGB(249, 35) & 0x00ffffff);
+        assertEquals(0xffffff, image.getRGB(388, 35) & 0x00ffffff);
+        assertEquals(0xffffff, image.getRGB(249, 59) & 0x00ffffff);
+        assertEquals(0xffffff, image.getRGB(388, 59) & 0x00ffffff);
+        assertTrue(countBlackPixels(image, 249, 35, 139, 24) > 10);
+    }
+
+    private void assertPassageAreaIsExpandedAboveCompactWeather(java.awt.image.BufferedImage image) {
+        assertEquals(0x000000, image.getRGB(294, 74) & 0x00ffffff);
+        assertEquals(0x000000, image.getRGB(387, 99) & 0x00ffffff);
+        assertEquals(0x000000, image.getRGB(12, 101) & 0x00ffffff);
+        assertEquals(0x000000, image.getRGB(12, 151) & 0x00ffffff);
+        assertEquals(0x000000, image.getRGB(12, 220) & 0x00ffffff);
+        assertTrue(countBlackPixels(image, 12, 80, 210, 16) > 30);
     }
 
     private int countBlackPixels(java.awt.image.BufferedImage image, int x, int y, int width, int height) {
@@ -90,7 +135,20 @@ class EpaperDisplayRendererTest {
                         null,
                         null,
                         Instant.parse("2026-10-19T09:00:00Z"),
-                        lineStatus));
+                        lineStatus,
+                        List.of(
+                                new DownstreamStopArrivalResult(
+                                        "STOP-2",
+                                        "Mairie",
+                                        Instant.parse("2026-10-19T10:12:00Z"),
+                                        null,
+                                        null),
+                                new DownstreamStopArrivalResult(
+                                        "STOP-3",
+                                        "Gare",
+                                        Instant.parse("2026-10-19T10:20:00Z"),
+                                        Instant.parse("2026-10-19T10:24:00Z"),
+                                        240))));
         WeatherForecastResult.CurrentWeather current = new WeatherForecastResult.CurrentWeather(
                 LocalDateTime.parse("2026-10-19T10:00"),
                 14,

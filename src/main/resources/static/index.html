@@ -252,6 +252,18 @@
                             </select>
                         </div>
                         <div class="field">
+                            <label for="settings-downstream-stop-1">Arrêt en aval 1 (facultatif)</label>
+                            <select id="settings-downstream-stop-1" disabled>
+                                <option value="">Aucun arrêt supplémentaire</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="settings-downstream-stop-2">Arrêt en aval 2 (facultatif)</label>
+                            <select id="settings-downstream-stop-2" disabled>
+                                <option value="">Choisir d’abord l’arrêt en aval 1</option>
+                            </select>
+                        </div>
+                        <div class="field">
                             <label for="postalCode">Code postal</label>
                             <input id="postalCode" name="postalCode" type="text" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="37000" required disabled>
                             <p class="field-hint">Code postal français à 5 chiffres.</p>
@@ -338,12 +350,15 @@
         const settingsLineSelect = document.getElementById("settings-line");
         const settingsDirectionSelect = document.getElementById("settings-direction");
         const settingsStopSelect = document.getElementById("settings-stop");
+        const settingsDownstreamStop1Select = document.getElementById("settings-downstream-stop-1");
+        const settingsDownstreamStop2Select = document.getElementById("settings-downstream-stop-2");
         let csrfToken = null;
         let devices = [];
         let selectedUuid = null;
         let linesLoaded = false;
         let availableLines = [];
         let currentStops = [];
+        let settingsStops = [];
 
         async function request(url, options = {}) {
             const method = (options.method || "GET").toUpperCase();
@@ -442,6 +457,11 @@
             settingsDirectionSelect.replaceChildren(new Option("Chargement des directions…", ""));
             settingsStopSelect.disabled = true;
             settingsStopSelect.replaceChildren(new Option("Choisir un arrêt", ""));
+            settingsDownstreamStop1Select.replaceChildren(new Option("Aucun arrêt supplémentaire", ""));
+            settingsDownstreamStop2Select.replaceChildren(new Option("Choisir d’abord l’arrêt en aval 1", ""));
+            settingsDownstreamStop1Select.disabled = true;
+            settingsDownstreamStop2Select.disabled = true;
+            settingsStops = [];
             try {
                 const result = await request(`${LINES_API}/${encodeURIComponent(line)}/directions`);
                 settingsDirectionSelect.replaceChildren(new Option("Choisir une direction", ""));
@@ -461,14 +481,16 @@
             }
         }
 
-        async function loadSettingsStops(line, direction, selectedStop = "") {
+        async function loadSettingsStops(line, direction, selectedStop = "", selectedDownstreamStops = []) {
             settingsStopSelect.disabled = true;
             settingsStopSelect.replaceChildren(new Option("Chargement des arrêts…", ""));
             try {
                 const result = await request(
                     `${LINES_API}/${encodeURIComponent(line)}/direction/${encodeURIComponent(direction)}/stops`
                 );
-                const stops = result.directions.flatMap(item => item.stops);
+                const stops = result.directions.flatMap(item => item.stops)
+                    .sort((left, right) => left.stopSequence - right.stopSequence);
+                settingsStops = stops;
                 settingsStopSelect.replaceChildren(new Option("Choisir un arrêt", ""));
                 for (const stop of stops) {
                     settingsStopSelect.add(new Option(`${stop.stopName} · ${stop.stopId}`, stop.stopId));
@@ -478,11 +500,42 @@
                 }
                 settingsStopSelect.disabled = stops.length === 0;
                 settingsStopSelect.value = selectedStop;
+                populateDownstreamStopOptions(selectedDownstreamStops);
             } catch (error) {
                 settingsStopSelect.replaceChildren(new Option("Erreur lors du chargement", ""));
                 showNotice(`Impossible de charger les arrêts pour les paramètres : ${error.message}`, true);
                 throw error;
             }
+        }
+
+        function populateDownstreamStopOptions(selectedDownstreamStops = []) {
+            const mainStop = settingsStops.find(stop => stop.stopId === settingsStopSelect.value);
+            const firstOptions = mainStop
+                ? settingsStops.filter(stop => stop.stopSequence > mainStop.stopSequence)
+                : [];
+            settingsDownstreamStop1Select.replaceChildren(new Option(
+                firstOptions.length ? "Aucun arrêt supplémentaire" : "Aucun arrêt en aval disponible",
+                ""
+            ));
+            for (const stop of firstOptions) {
+                settingsDownstreamStop1Select.add(new Option(`${stop.stopName} · ${stop.stopId}`, stop.stopId));
+            }
+            settingsDownstreamStop1Select.disabled = !mainStop || firstOptions.length === 0;
+            settingsDownstreamStop1Select.value = selectedDownstreamStops[0] || "";
+
+            const firstStop = firstOptions.find(stop => stop.stopId === settingsDownstreamStop1Select.value);
+            const secondOptions = firstStop
+                ? settingsStops.filter(stop => stop.stopSequence > firstStop.stopSequence)
+                : [];
+            settingsDownstreamStop2Select.replaceChildren(new Option(
+                firstStop ? "Aucun arrêt supplémentaire" : "Choisir d’abord l’arrêt en aval 1",
+                ""
+            ));
+            for (const stop of secondOptions) {
+                settingsDownstreamStop2Select.add(new Option(`${stop.stopName} · ${stop.stopId}`, stop.stopId));
+            }
+            settingsDownstreamStop2Select.disabled = !firstStop || secondOptions.length === 0;
+            settingsDownstreamStop2Select.value = selectedDownstreamStops[1] || "";
         }
 
         async function loadDirections(line) {
@@ -857,10 +910,19 @@
                 settingsDirectionSelect.disabled = !device.line;
                 settingsStopSelect.replaceChildren(new Option("Choisir un arrêt", ""));
                 settingsStopSelect.disabled = true;
+                settingsDownstreamStop1Select.replaceChildren(new Option("Aucun arrêt supplémentaire", ""));
+                settingsDownstreamStop2Select.replaceChildren(new Option("Choisir d’abord l’arrêt en aval 1", ""));
+                settingsDownstreamStop1Select.disabled = true;
+                settingsDownstreamStop2Select.disabled = true;
+                settingsStops = [];
                 if (device.line) {
                     const directionExists = await loadSettingsDirections(device.line, device.direction || "");
                     if (directionExists && device.direction) {
-                        await loadSettingsStops(device.line, device.direction, device.stopId || "");
+                        await loadSettingsStops(
+                            device.line,
+                            device.direction,
+                            device.stopId || "",
+                            device.downstreamStopIds || []);
                     }
                 }
                 document.getElementById("settings-hint").textContent = "Modifiez les paramètres puis enregistrez vos changements.";
@@ -879,6 +941,11 @@
             for (const field of settingsFields) field.disabled = true;
             settingsDirectionSelect.replaceChildren(new Option("Choisir une direction", ""));
             settingsStopSelect.replaceChildren(new Option("Choisir un arrêt", ""));
+            settingsDownstreamStop1Select.replaceChildren(new Option("Aucun arrêt supplémentaire", ""));
+            settingsDownstreamStop2Select.replaceChildren(new Option("Choisir d’abord l’arrêt en aval 1", ""));
+            settingsDownstreamStop1Select.disabled = true;
+            settingsDownstreamStop2Select.disabled = true;
+            settingsStops = [];
             document.getElementById("settings-hint").textContent = "Choisissez un appareil dans la liste pour modifier ses paramètres.";
             document.getElementById("save-settings").disabled = true;
             document.getElementById("cancel-edit").hidden = true;
@@ -915,6 +982,10 @@
             button.disabled = true;
             const values = Object.fromEntries(new FormData(settingsForm).entries());
             delete values.uuid;
+            values.downstreamStopIds = [
+                settingsDownstreamStop1Select.value,
+                settingsDownstreamStop2Select.value
+            ].filter(Boolean);
             try {
                 await request(`${API}/${encodeURIComponent(selectedUuid)}`, {
                     method: "PUT",
@@ -983,8 +1054,13 @@
             clearNotice();
             settingsDirectionSelect.replaceChildren(new Option("Choisir une direction", ""));
             settingsStopSelect.replaceChildren(new Option("Choisir un arrêt", ""));
+            settingsDownstreamStop1Select.replaceChildren(new Option("Aucun arrêt supplémentaire", ""));
+            settingsDownstreamStop2Select.replaceChildren(new Option("Choisir d’abord l’arrêt en aval 1", ""));
             settingsDirectionSelect.disabled = true;
             settingsStopSelect.disabled = true;
+            settingsDownstreamStop1Select.disabled = true;
+            settingsDownstreamStop2Select.disabled = true;
+            settingsStops = [];
             if (settingsLineSelect.value) {
                 try {
                     await loadSettingsDirections(settingsLineSelect.value);
@@ -996,7 +1072,12 @@
         settingsDirectionSelect.addEventListener("change", async () => {
             clearNotice();
             settingsStopSelect.replaceChildren(new Option("Choisir un arrêt", ""));
+            settingsDownstreamStop1Select.replaceChildren(new Option("Aucun arrêt supplémentaire", ""));
+            settingsDownstreamStop2Select.replaceChildren(new Option("Choisir d’abord l’arrêt en aval 1", ""));
             settingsStopSelect.disabled = true;
+            settingsDownstreamStop1Select.disabled = true;
+            settingsDownstreamStop2Select.disabled = true;
+            settingsStops = [];
             if (settingsLineSelect.value && settingsDirectionSelect.value) {
                 try {
                     await loadSettingsStops(settingsLineSelect.value, settingsDirectionSelect.value);
@@ -1004,6 +1085,12 @@
                     showNotice(`Impossible de préparer les arrêts : ${error.message}`, true);
                 }
             }
+        });
+        settingsStopSelect.addEventListener("change", () => {
+            populateDownstreamStopOptions();
+        });
+        settingsDownstreamStop1Select.addEventListener("change", () => {
+            populateDownstreamStopOptions([settingsDownstreamStop1Select.value]);
         });
         lineSelect.addEventListener("change", () => {
             clearNotice();

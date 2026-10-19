@@ -45,6 +45,7 @@ public class GtfsStaticCatalog {
     private Map<StopSequence, Set<TripDirection>> tripsByStopSequence = Map.of();
     private Map<DirectionKey, Map<Integer, Set<String>>> stopsByLineAndDirection = Map.of();
     private Map<StopDirectionKey, List<ScheduledDeparture>> departuresByStopDirection = Map.of();
+    private Map<String, List<TripStopTime>> stopTimesByTrip = Map.of();
     private Map<String, ServiceCalendar> serviceCalendars = Map.of();
     private Map<LocalDate, Map<String, Boolean>> serviceExceptions = Map.of();
     private ZoneId agencyTimeZone = ZoneId.of("Europe/Paris");
@@ -67,6 +68,7 @@ public class GtfsStaticCatalog {
             tripsByStopSequence = catalog.tripsByStopSequence();
             stopsByLineAndDirection = catalog.stopsByLineAndDirection();
             departuresByStopDirection = catalog.departuresByStopDirection();
+            stopTimesByTrip = catalog.stopTimesByTrip();
             serviceCalendars = catalog.serviceCalendars();
             serviceExceptions = catalog.serviceExceptions();
             agencyTimeZone = catalog.agencyTimeZone();
@@ -152,6 +154,26 @@ public class GtfsStaticCatalog {
                         && route.routeType() == routeType);
     }
 
+    public ScheduledStopArrival scheduledArrivalAtStop(
+            String tripId, LocalDate serviceDate, String stopId, int afterStopSequence) {
+        Trip trip = trips.get(tripId);
+        if (trip == null) {
+            return null;
+        }
+        for (TripStopTime stopTime : stopTimesByTrip.getOrDefault(tripId, List.of())) {
+            if (stopTime.stopSequence() > afterStopSequence
+                    && stopTime.stopId().equalsIgnoreCase(stopId.trim())
+                    && stopTime.arrivalSeconds() != null) {
+                Instant arrival = serviceDate.atStartOfDay()
+                        .plusSeconds(stopTime.arrivalSeconds())
+                        .atZone(agencyTimeZone)
+                        .toInstant();
+                return new ScheduledStopArrival(stopTime.stopSequence(), arrival);
+            }
+        }
+        return null;
+    }
+
     public List<ScheduledTrip> nextDepartures(
             String line, String direction, String stopId, Instant now, int limit) {
         String requestedLine = line.trim();
@@ -197,6 +219,7 @@ public class GtfsStaticCatalog {
                             requestedDirection,
                             stopId,
                             departure.stopSequence(),
+                            serviceDate,
                             scheduledArrivalTime,
                             scheduledDepartureTime));
                 }
@@ -284,12 +307,18 @@ public class GtfsStaticCatalog {
         Map<StopSequence, Set<TripDirection>> parsedTripsByStopSequence = new HashMap<>();
         Map<DirectionKey, Map<Integer, Set<String>>> parsedStopsByLineAndDirection = new HashMap<>();
         Map<StopDirectionKey, List<ScheduledDeparture>> parsedDeparturesByStopDirection = new HashMap<>();
+        Map<String, List<TripStopTime>> parsedStopTimesByTrip = new HashMap<>();
         readBytes(stopTimesContents, (record) -> {
             Trip trip = parsedTrips.get(record.get("trip_id"));
             String stopId = record.get("stop_id");
             String stopSequence = record.get("stop_sequence");
             if (trip != null && !stopId.isBlank() && !stopSequence.isBlank()) {
                 int sequence = Integer.parseInt(stopSequence);
+                parsedStopTimesByTrip.computeIfAbsent(record.get("trip_id"), ignored -> new ArrayList<>())
+                        .add(new TripStopTime(
+                                stopId,
+                                sequence,
+                                parseOptionalGtfsTime(record.get("arrival_time"))));
                 StopSequence key = new StopSequence(stopId, sequence);
                 parsedTripsByStopSequence
                         .computeIfAbsent(key, ignored -> new HashSet<>())
@@ -337,6 +366,11 @@ public class GtfsStaticCatalog {
         Map<StopDirectionKey, List<ScheduledDeparture>> immutableDeparturesByStopDirection = new HashMap<>();
         parsedDeparturesByStopDirection.forEach(
                 (key, departures) -> immutableDeparturesByStopDirection.put(key, List.copyOf(departures)));
+        Map<String, List<TripStopTime>> immutableStopTimesByTrip = new HashMap<>();
+        parsedStopTimesByTrip.forEach((tripId, stopTimes) -> {
+            stopTimes.sort(Comparator.comparingInt(TripStopTime::stopSequence));
+            immutableStopTimesByTrip.put(tripId, List.copyOf(stopTimes));
+        });
         Map<String, ServiceCalendar> parsedServiceCalendars = new HashMap<>();
         readBytes(calendarContents, (record) -> parsedServiceCalendars.put(
                 record.get("service_id"),
@@ -369,6 +403,7 @@ public class GtfsStaticCatalog {
                 Map.copyOf(immutableTripsByStopSequence),
                 Map.copyOf(immutableStopsByLineAndDirection),
                 Map.copyOf(immutableDeparturesByStopDirection),
+                Map.copyOf(immutableStopTimesByTrip),
                 Map.copyOf(parsedServiceCalendars),
                 Map.copyOf(immutableServiceExceptions),
                 parsedAgencyTimeZone);
@@ -449,8 +484,15 @@ public class GtfsStaticCatalog {
             String direction,
             String stopId,
             int stopSequence,
+            LocalDate serviceDate,
             Instant scheduledArrivalTime,
             Instant scheduledDepartureTime) {
+    }
+
+    public record ScheduledStopArrival(int stopSequence, Instant arrivalTime) {
+    }
+
+    private record TripStopTime(String stopId, int stopSequence, Long arrivalSeconds) {
     }
 
     private record ScheduledDeparture(
@@ -490,6 +532,7 @@ public class GtfsStaticCatalog {
             Map<StopSequence, Set<TripDirection>> tripsByStopSequence,
             Map<DirectionKey, Map<Integer, Set<String>>> stopsByLineAndDirection,
             Map<StopDirectionKey, List<ScheduledDeparture>> departuresByStopDirection,
+            Map<String, List<TripStopTime>> stopTimesByTrip,
             Map<String, ServiceCalendar> serviceCalendars,
             Map<LocalDate, Map<String, Boolean>> serviceExceptions,
             ZoneId agencyTimeZone) {

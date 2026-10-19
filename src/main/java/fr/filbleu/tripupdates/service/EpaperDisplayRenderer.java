@@ -1,6 +1,7 @@
 package fr.filbleu.tripupdates.service;
 
 import fr.filbleu.tripupdates.api.dto.DeviceInfosResult;
+import fr.filbleu.tripupdates.api.dto.DownstreamStopArrivalResult;
 import fr.filbleu.tripupdates.api.dto.LineStatusResult;
 import fr.filbleu.tripupdates.api.dto.UpcomingTripResult;
 import fr.filbleu.tripupdates.api.dto.WeatherForecastResult;
@@ -13,6 +14,7 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -48,10 +50,9 @@ public class EpaperDisplayRenderer {
             graphics.setColor(Color.WHITE);
             graphics.fillRect(0, 0, WIDTH, HEIGHT);
             drawHeader(graphics, infos);
-            boolean hasAlerts = drawAlerts(graphics, infos.lineStatus());
-            int tripTitleY = hasAlerts ? 129 : 105;
-            drawTrips(graphics, infos.trips(), tripTitleY);
-            drawWeather(graphics, infos.weather(), hasAlerts ? 214 : 208);
+            drawAlertPanel(graphics, infos.lineStatus());
+            drawTrips(graphics, infos.trips(), 94);
+            drawWeather(graphics, infos.weather(), 220);
         } finally {
             graphics.dispose();
         }
@@ -85,10 +86,10 @@ public class EpaperDisplayRenderer {
         graphics.setColor(Color.BLACK);
         graphics.setFont(NORMAL);
         drawFitted(graphics,
-                safe(infos.device().line()) + "  >  " + safe(infos.device().direction()),
+                "Ligne " + safe(infos.device().line()) + "  >  " + safe(infos.device().direction()),
                 MARGIN,
                 46,
-                CONTENT_WIDTH);
+                222);
         graphics.setFont(BOLD);
         drawFitted(graphics, stopName(infos), MARGIN, 62, CONTENT_WIDTH);
         graphics.drawLine(MARGIN, 68, WIDTH - MARGIN, 68);
@@ -102,42 +103,39 @@ public class EpaperDisplayRenderer {
                 .orElse(safe(infos.device().stopId()));
     }
 
-    private boolean drawAlerts(Graphics2D graphics, LineStatusResult status) {
+    private void drawAlertPanel(Graphics2D graphics, LineStatusResult status) {
+        int x = 249;
+        int y = 35;
+        int width = WIDTH - MARGIN - x;
+        int height = 24;
         List<LineStatusResult.Alert> alerts = status.alerts();
+        graphics.setColor(Color.BLACK);
         if (alerts != null && !alerts.isEmpty()) {
-            int boxTop = 73;
-            graphics.setColor(Color.BLACK);
-            graphics.drawRect(MARGIN, boxTop, CONTENT_WIDTH, 43);
-            graphics.fillRect(MARGIN + 1, boxTop + 1, CONTENT_WIDTH - 1, 12);
-            graphics.setColor(Color.WHITE);
-            graphics.setFont(SMALL.deriveFont(Font.BOLD, 11f));
+            graphics.setFont(SMALL.deriveFont(Font.BOLD, 9f));
             String label = alerts.size() == 1 ? "ALERTE" : "ALERTE (" + alerts.size() + ")";
-            graphics.drawString(label, MARGIN + 5, boxTop + 10);
+            graphics.drawString(label, x + 4, y + 8);
 
-            graphics.setColor(Color.BLACK);
             graphics.setFont(SMALL);
             String alertText = firstNonBlank(
                     alerts.get(0).header(),
                     alerts.get(0).description(),
                     alerts.get(0).effect(),
                     "Perturbation en cours");
-            drawWrapped(graphics, alertText, MARGIN + 5, boxTop + 25, CONTENT_WIDTH - 10, 12, 2);
-            return true;
+            drawFitted(graphics, alertText, x + 4, y + 20, width - 8);
+        } else {
+            graphics.setFont(SMALL);
+            String message = status.alertFeedAvailable()
+                    ? "Aucune alerte publiee"
+                    : "Flux d'alertes indisponible";
+            drawFitted(graphics, message, x + 4, centeredTextBaseline(graphics, y, height), width - 8);
         }
-
-        graphics.setColor(Color.BLACK);
-        graphics.setFont(SMALL);
-        String message = status.alertFeedAvailable()
-                ? "Aucune alerte publiee"
-                : "Flux d'alertes indisponible";
-        graphics.drawString(message, MARGIN, 83);
-        return false;
     }
 
     private void drawTrips(Graphics2D graphics, List<UpcomingTripResult> trips, int titleY) {
         graphics.setColor(Color.BLACK);
         graphics.setFont(BOLD.deriveFont(15f));
         graphics.drawString("PROCHAINS PASSAGES", MARGIN, titleY);
+        drawStatePanel(graphics, trips, titleY - 20);
         graphics.setFont(NORMAL);
 
         if (trips == null || trips.isEmpty()) {
@@ -146,26 +144,76 @@ public class EpaperDisplayRenderer {
             int rowTop = titleY + 7;
             for (int index = 0; index < Math.min(2, trips.size()); index++) {
                 UpcomingTripResult trip = trips.get(index);
-                int y = rowTop + index * 40;
-                graphics.drawRect(MARGIN, y, CONTENT_WIDTH, 36);
+                int rowY = rowTop + index * 54;
+                graphics.drawRect(MARGIN, rowY, CONTENT_WIDTH, 50);
                 graphics.setFont(BOLD);
-                graphics.drawString((index + 1) + ".", MARGIN + 6, y + 20);
+                graphics.drawString((index + 1) + ".", MARGIN + 6, rowY + 20);
                 String time = trip.arrivalTime() == null
                         ? formatTime(trip.scheduledArrivalTime())
                         : formatTime(trip.arrivalTime());
-                graphics.setFont(ARRIVAL_TIME);
-                graphics.drawString(time, MARGIN + 28, y + 23);
-                String delay = delayLabel(trip);
-                if (delay != null) {
-                    graphics.setFont(NORMAL);
-                    drawFitted(graphics, delay, MARGIN + 95, y + 19, CONTENT_WIDTH - 101);
-                }
+                graphics.setFont(ARRIVAL_TIME.deriveFont(22f));
+                graphics.drawString(time, MARGIN + 28, rowY + 26);
                 graphics.setFont(SMALL);
                 graphics.drawString(
                         trip.arrivalTime() == null ? "THEORIQUE" : "TEMPS REEL",
                         MARGIN + 28,
-                        y + 34);
+                        rowY + 40);
+                drawDownstreamArrivals(graphics, trip.downstreamArrivals(), rowY);
             }
+        }
+    }
+
+    private void drawStatePanel(Graphics2D graphics, List<UpcomingTripResult> trips, int boxTop) {
+        int delayPanelWidth = 94;
+        int panelHeight = 25;
+        int delayPanelX = WIDTH - MARGIN - delayPanelWidth;
+        graphics.setColor(Color.BLACK);
+        graphics.drawRect(delayPanelX, boxTop, delayPanelWidth, panelHeight);
+        graphics.fillRect(delayPanelX + 1, boxTop + 1, delayPanelWidth - 1, 10);
+        graphics.setColor(Color.WHITE);
+        graphics.setFont(SMALL.deriveFont(Font.BOLD, 9f));
+        graphics.drawString("ÉTAT", delayPanelX + 4, boxTop + 9);
+        graphics.setColor(Color.BLACK);
+        graphics.setFont(SMALL.deriveFont(Font.BOLD, 11f));
+        String delay = trips == null
+                ? null
+                : trips.stream()
+                        .filter(trip -> trip.arrivalTime() != null || trip.departureTime() != null)
+                        .map(this::delayLabel)
+                        .filter(value -> value != null)
+                        .findFirst()
+                        .orElse(null);
+        drawFitted(
+                graphics,
+                delay == null ? "--" : delay,
+                delayPanelX + 4,
+                centeredTextBaseline(graphics, boxTop + 11, panelHeight - 11),
+                delayPanelWidth - 8);
+    }
+
+    private int centeredTextBaseline(Graphics2D graphics, int boxTop, int boxHeight) {
+        FontMetrics metrics = graphics.getFontMetrics();
+        return (boxTop + boxTop + boxHeight - 1 + metrics.getAscent() - metrics.getDescent()) / 2;
+    }
+
+    private void drawDownstreamArrivals(
+            Graphics2D graphics, List<DownstreamStopArrivalResult> arrivals, int rowTop) {
+        if (arrivals == null || arrivals.isEmpty()) {
+            return;
+        }
+        int startX = MARGIN + 112;
+        int availableWidth = WIDTH - MARGIN - startX;
+        int columnWidth = availableWidth / arrivals.size();
+        for (int index = 0; index < arrivals.size(); index++) {
+            DownstreamStopArrivalResult arrival = arrivals.get(index);
+            int x = startX + index * columnWidth;
+            graphics.setFont(SMALL);
+            drawFitted(graphics, arrival.stopName(), x, rowTop + 13, columnWidth - 4);
+            graphics.setFont(SMALL.deriveFont(Font.BOLD, 12f));
+            String time = arrival.arrivalTime() == null
+                    ? formatTime(arrival.scheduledArrivalTime())
+                    : formatTime(arrival.arrivalTime());
+            graphics.drawString(time, x, rowTop + 30);
         }
     }
 
@@ -184,7 +232,7 @@ public class EpaperDisplayRenderer {
                     graphics,
                     new String[] {"ACTUEL", "MATIN", "APRES-MIDI", "SOIR"}[index],
                     x + 4,
-                    tileTop + 9,
+                    tileTop + 10,
                     tileWidth - 8);
             graphics.setFont(NORMAL);
             String temperature;
@@ -203,11 +251,11 @@ public class EpaperDisplayRenderer {
                 rain = "Pluie " + period.maximumPrecipitationProbabilityPercent() + "%";
                 weatherCode = period.weatherCode();
             }
-            drawWeatherIcon(graphics, weatherCode, x + 6, tileTop + 13);
-            graphics.drawString(temperature, x + 36, tileTop + 31);
+            drawWeatherIcon(graphics, weatherCode, x + 6, tileTop + 12);
+            graphics.drawString(temperature, x + 36, tileTop + 27);
             graphics.setFont(SMALL);
-            drawWrapped(graphics, safe(description), x + 4, tileTop + 47, tileWidth - 8, 10, 2);
-            graphics.drawString(rain, x + 4, HEIGHT - 3);
+            drawWrapped(graphics, safe(description), x + 4, tileTop + 43, tileWidth - 8, 9, 1);
+            graphics.drawString(rain, x + 4, HEIGHT - 6);
         }
     }
 
@@ -302,6 +350,16 @@ public class EpaperDisplayRenderer {
         Integer delaySeconds = trip.arrivalDelaySeconds() != null
                 ? trip.arrivalDelaySeconds()
                 : trip.departureDelaySeconds();
+        if (delaySeconds == null && trip.arrivalTime() != null && trip.scheduledArrivalTime() != null) {
+            delaySeconds = (int) Duration.between(
+                    trip.scheduledArrivalTime(),
+                    trip.arrivalTime()).toSeconds();
+        }
+        if (delaySeconds == null && trip.departureTime() != null && trip.scheduledDepartureTime() != null) {
+            delaySeconds = (int) Duration.between(
+                    trip.scheduledDepartureTime(),
+                    trip.departureTime()).toSeconds();
+        }
         if (delaySeconds == null) {
             return null;
         }

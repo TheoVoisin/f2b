@@ -1,6 +1,7 @@
 package fr.filbleu.tripupdates.service;
 
 import fr.filbleu.tripupdates.api.dto.LineStatusResult;
+import fr.filbleu.tripupdates.api.dto.DownstreamStopArrivalResult;
 import fr.filbleu.tripupdates.api.dto.TripUpdateResult;
 import fr.filbleu.tripupdates.api.dto.UpcomingTripResult;
 import fr.filbleu.tripupdates.infrastructure.gtfs.GtfsStaticCatalog;
@@ -70,6 +71,11 @@ public class TripUpdateService {
     }
 
     public List<UpcomingTripResult> nextTripsAtStop(String line, String stopId, String direction) {
+        return nextTripsAtStop(line, stopId, direction, List.of());
+    }
+
+    public List<UpcomingTripResult> nextTripsAtStop(
+            String line, String stopId, String direction, List<String> downstreamStopIds) {
         List<TripUpdateResult> realtimeUpdates = currentUpdates.get();
         LineStatusResult lineStatus = lineStatusService.statusForLine(line);
         Set<String> matchedRealtimeTrips = new HashSet<>();
@@ -80,6 +86,8 @@ public class TripUpdateService {
                         matchedRealtimeTrips.add(realtime.tripId());
                     }
                     GtfsStaticCatalog.Stop stop = catalog.stop(stopId);
+                    List<DownstreamStopArrivalResult> downstreamArrivals =
+                            downstreamArrivals(scheduled, realtime, downstreamStopIds, realtimeUpdates);
                     return new UpcomingTripResult(
                             scheduled.tripId(),
                             realtime == null ? null : realtime.tripId(),
@@ -95,8 +103,48 @@ public class TripUpdateService {
                             realtime == null ? null : realtime.departureTime(),
                             realtime == null ? null : realtime.departureDelaySeconds(),
                             realtime == null ? null : realtime.feedTimestamp(),
-                            lineStatus);
+                            lineStatus,
+                            downstreamArrivals);
                 })
+                .toList();
+    }
+
+    private List<DownstreamStopArrivalResult> downstreamArrivals(
+            GtfsStaticCatalog.ScheduledTrip scheduled,
+            TripUpdateResult mainStopRealtime,
+            List<String> downstreamStopIds,
+            List<TripUpdateResult> realtimeUpdates) {
+        if (downstreamStopIds == null || downstreamStopIds.isEmpty()) {
+            return List.of();
+        }
+        return downstreamStopIds.stream()
+                .map(stopId -> {
+                    GtfsStaticCatalog.ScheduledStopArrival scheduledArrival = catalog.scheduledArrivalAtStop(
+                            scheduled.tripId(),
+                            scheduled.serviceDate(),
+                            stopId,
+                            scheduled.stopSequence());
+                    if (scheduledArrival == null) {
+                        return null;
+                    }
+                    TripUpdateResult realtimeArrival = mainStopRealtime == null
+                            ? null
+                            : realtimeUpdates.stream()
+                                    .filter(update -> update.tripId().equals(mainStopRealtime.tripId())
+                                            && update.stopId().equalsIgnoreCase(stopId)
+                                            && update.stopSequence() != null
+                                            && update.stopSequence() == scheduledArrival.stopSequence())
+                                    .findFirst()
+                                    .orElse(null);
+                    GtfsStaticCatalog.Stop stop = catalog.stop(stopId);
+                    return new DownstreamStopArrivalResult(
+                            stopId,
+                            stop == null ? stopId : stop.name(),
+                            scheduledArrival.arrivalTime(),
+                            realtimeArrival == null ? null : realtimeArrival.arrivalTime(),
+                            realtimeArrival == null ? null : realtimeArrival.arrivalDelaySeconds());
+                })
+                .filter(arrival -> arrival != null)
                 .toList();
     }
 

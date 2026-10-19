@@ -37,8 +37,10 @@ class DeviceRegistryServiceTest {
                 "2",
                 "LYCEE J. MONNET",
                 "TTR:GATO-2T",
-                "37000");
+                "37000",
+                java.util.List.of("TTR:STOP-2", "TTR:STOP-3"));
         assertTrue(configured.isConfigured());
+        assertEquals(java.util.List.of("TTR:STOP-2", "TTR:STOP-3"), configured.downstreamStopIds());
 
         DeviceRegistryService reloaded = new DeviceRegistryService(new ObjectMapper(), storageFile.toString());
         assertEquals(configured, reloaded.find(uuid));
@@ -69,6 +71,18 @@ class DeviceRegistryServiceTest {
                 ResponseStatusException.class,
                 () -> registry.update(uuid, " ", "2", "Direction", "Stop", "37000"));
         assertEquals(HttpStatus.BAD_REQUEST, missingName.getStatusCode());
+
+        ResponseStatusException tooManyDownstreamStops = assertThrows(
+                ResponseStatusException.class,
+                () -> registry.update(
+                        uuid,
+                        "Display",
+                        "2",
+                        "Direction",
+                        "Stop",
+                        "37000",
+                        java.util.List.of("Stop-2", "Stop-3", "Stop-4")));
+        assertEquals(HttpStatus.BAD_REQUEST, tooManyDownstreamStops.getStatusCode());
     }
 
     @Test
@@ -93,5 +107,6 @@ class DeviceRegistryServiceTest {
 
         assertEquals(uuid.toString(), registry.find(uuid).name());
         assertTrue(registry.find(uuid).isConfigured());
+        assertTrue(registry.find(uuid).downstreamStopIds().isEmpty());
     }
 }

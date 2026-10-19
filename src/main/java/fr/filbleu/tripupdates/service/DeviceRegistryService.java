@@ -73,6 +73,17 @@ public class DeviceRegistryService {
             String direction,
             String stopId,
             String postalCode) {
+        return update(uuid, name, line, direction, stopId, postalCode, List.of());
+    }
+
+    public synchronized Device update(
+            UUID uuid,
+            String name,
+            String line,
+            String direction,
+            String stopId,
+            String postalCode,
+            List<String> downstreamStopIds) {
         find(uuid);
         requireText(name, "name");
         requireText(line, "line");
@@ -82,7 +93,26 @@ public class DeviceRegistryService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A French five-digit postal code is required");
         }
 
-        Device device = new Device(uuid, name.trim(), line.trim(), direction.trim(), stopId.trim(), postalCode);
+        List<String> normalizedDownstreamStopIds = downstreamStopIds == null
+                ? List.of()
+                : downstreamStopIds.stream()
+                        .map(value -> value == null ? "" : value.trim())
+                        .filter(value -> !value.isEmpty())
+                        .toList();
+        if (normalizedDownstreamStopIds.size() > 2
+                || normalizedDownstreamStopIds.stream().distinct().count() != normalizedDownstreamStopIds.size()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "At most two distinct downstream stops may be configured");
+        }
+
+        Device device = new Device(
+                uuid,
+                name.trim(),
+                line.trim(),
+                direction.trim(),
+                stopId.trim(),
+                postalCode,
+                normalizedDownstreamStopIds);
         Map<UUID, Device> updatedDevices = new LinkedHashMap<>(devices);
         updatedDevices.put(uuid, device);
         persist(updatedDevices);
@@ -119,7 +149,8 @@ public class DeviceRegistryService {
                             device.line(),
                             device.direction(),
                             device.stopId(),
-                            device.postalCode());
+                            device.postalCode(),
+                            device.downstreamStopIds());
                 }
                 devices.put(entry.getKey(), device);
             }

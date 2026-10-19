@@ -108,13 +108,14 @@ The device registry supports `GET /api/devices`, `GET /api/devices/{uuid}`, `PUT
   "line": "2",
   "direction": "LYCEE J. MONNET",
   "stopId": "TTR:GATO-2T",
-  "postalCode": "37000"
+  "postalCode": "37000",
+  "downstreamStopIds": ["TTR:STOP-2", "TTR:STOP-3"]
 }
 ```
 
-After settings are saved, `GET /api/devices/{uuid}/infos` returns a combined object containing the device (including its `name`), trips at its configured stop, the line's status, and the postal-code weather forecast. A device without all settings receives `409 Conflict`; unknown UUIDs return `404 Not Found`, and duplicate registrations return `409 Conflict`. Newly registered devices use their UUID as the default name until settings are updated. Device data is stored in `./data/devices.json` by default. Set `FILBLEU_DEVICES_FILE` (or the `filbleu.devices-file` property) to change the file location.
+`downstreamStopIds` is optional and accepts up to two distinct stops in route order, after the configured main stop in the same direction. After settings are saved, `GET /api/devices/{uuid}/infos` returns a combined object containing the device (including its `name` and downstream stops), the next two trips at the configured main stop, their theoretical and available realtime arrival times at each configured downstream stop, the line's status, and the postal-code weather forecast. A device without all required settings receives `409 Conflict`; invalid downstream-stop selections return `400 Bad Request`; unknown UUIDs return `404 Not Found`, and duplicate registrations return `409 Conflict`. Newly registered devices use their UUID as the default name until settings are updated. Device data is stored in `./data/devices.json` by default. Set `FILBLEU_DEVICES_FILE` (or the `filbleu.devices-file` property) to change the file location.
 
-`GET /api/devices/{uuid}/display` returns a 400×300, black-and-white PNG for an e-paper screen. It shows the two next arrival times, any known realtime delay, current weather and the morning, afternoon, and evening forecast, each with a weather pictogram based on its weather code. When the line has active alerts, the image includes the first alert and the number of active alerts. The endpoint uses the same configuration checks and upstream data as `/infos`.
+`GET /api/devices/{uuid}/display` returns a 400×300, black-and-white PNG for an e-paper screen. It shows the two next arrival times at the configured main stop and, when configured, their arrival times at up to two downstream stops, using realtime times when available and theoretical times otherwise. A known realtime delay or advance for the next passage is shown in its own panel beside the line alerts, rather than inline with the passage times. It also shows current weather and the morning, afternoon, and evening forecast, each with a weather pictogram based on its weather code. When the line has active alerts, the image includes the first alert and the number of active alerts. The endpoint uses the same configuration checks and upstream data as `/infos`.
 
 ## Configuration
 

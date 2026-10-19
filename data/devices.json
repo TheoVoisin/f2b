@@ -5,6 +5,7 @@
     "line" : "A",
     "direction" : "LYCEE J. MONNET",
     "stopId" : "TTR:TRRI-1T",
-    "postalCode" : "37100"
+    "postalCode" : "37100",
+    "downstreamStopIds" : [ "TTR:PODL-1T", "TTR:GATO-1T" ]
   }
 }
