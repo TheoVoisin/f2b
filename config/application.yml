@@ -1,6 +1,7 @@
 spring:
   application:
     name: fil-bleu-box
+debug: true
 server:
   port: ${PORT:8080}
   forward-headers-strategy: framework

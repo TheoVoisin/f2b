@@ -1,0 +1,10 @@
+services:
+  fil-bleu-box:
+    image: fil-bleu-box:latest
+    ports:
+      - "8080:8080"
+    environment:
+      FILBLEU_DEVICES_FILE: /app/data/devices.json
+    volumes:
+      - ./config:/app/config:ro
+      - ./data:/app/data

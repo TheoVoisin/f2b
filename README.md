@@ -29,6 +29,23 @@ Build the image from the project root:
 docker build -t fil-bleu-box .
 ```
 
+### Docker Compose
+
+The included `compose.yaml` runs that image, mounts `config/application.yml` read-only for external configuration, and persists the device registry in the host's `data` directory. From the project root, edit `config/application.yml` to set deployment-specific values and run:
+
+```powershell
+docker compose up -d
+```
+
+The app is available at `http://localhost:8080/`. To see its logs or stop it:
+
+```powershell
+docker compose logs -f
+docker compose down
+```
+
+`FILBLEU_DEVICES_FILE` is set to `/app/data/devices.json` in Compose. The host `data` directory is mounted read-write so registry updates survive container recreation. If you change the file location, update both this environment variable and the host volume mount as needed.
+
 Run it with the device registry persisted in the host's `data` directory and an optional external `config/application.yml` mounted read-only:
 
 ```powershell
